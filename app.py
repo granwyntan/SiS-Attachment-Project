@@ -33,7 +33,8 @@ class GUI:
         self.window.bind("f", self.toggleFullScreen)
         self.window.bind("<F11>", self.toggleFullScreen)
         self.window.bind("<Escape>", self.quitFullScreen)
-
+        status = Label(self.window, text="By Granwyn Tan. v0.0.1", bd=1, relief=SUNKEN, anchor=SE)
+        status.pack(fill=X)
         self.window.mainloop()
 
     def toggleFullScreen(self, event):
@@ -65,6 +66,7 @@ class GUI:
                 return
         else:
             tk.messagebox.showwarning("Open Source File", "No File Opened")
+            # tk.messagebox.showinfo("Open Source File", "No File Opened")
             return
 
 
