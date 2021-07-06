@@ -41,7 +41,7 @@ class GUI: # Class to write all code in
 
         # fig = Figure(figsize=(5, 4), dpi=100)
         self.figure, self.ax = plt.subplots(figsize=(5, 4), dpi=100)
-        # line1 = ax.plot(x, y)
+        # self.line = self.ax.plot(x, y)
         self.ax.plot(self.x_coords, self.y_coords, label='Fluorescence')
         # self.ax.ion()
         self.ax.grid()
@@ -121,12 +121,12 @@ class GUI: # Class to write all code in
         self.window.attributes("-fullscreen", self.fullScreen)
 
     def plotGraph(self):
-        self.line.scatter(self.x_coords, self.y_coords)
-        self.line.plot(self.x_coords, self.y_coords, label='Fluorescence')
-        self.line.set_xticks(np.arange(min(self.x_coords), max(self.x_coords) + 1, 35))
-        self.line.set_yticks(np.arange(min(self.y_coords), max(self.y_coords) + 1, 40))
-        self.line.tight_layout()
+        self.ax.scatter(self.x_coords, self.y_coords)
+        self.ax.plot(self.x_coords, self.y_coords, label='Fluorescence')
+        self.ax.set_xticks(np.arange(min(self.x_coords), max(self.x_coords) + 1, 35))
+        self.ax.set_yticks(np.arange(min(self.y_coords), max(self.y_coords) + 1, 40))
         self.figure.canvas.draw()
+        self.figure.canvas.flush_events()
 
 
     # Opening File Functionality
@@ -156,6 +156,7 @@ class GUI: # Class to write all code in
                         # TODO: Embed in Tk - https://matplotlib.org/stable/gallery/user_interfaces/embedding_in_tk_sgskip.html
                         # TODO: Checkboxes for various filters
                         # TODO: Implement filters
+                        self.plotGraph()
                         return
                     else:
                         return
