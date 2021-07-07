@@ -64,8 +64,10 @@ class GUI: # Class to write all code in
         # tab1 = ttk.LabelFrame(tabControl, text="FrameName") can use Label Frame and set text if required
         frame1tab1 = ttk.Frame(frame1tab)  # create
         frame1tab2 = ttk.Frame(frame1tab)
+        frame1tab3 = ttk.Frame(frame1tab)
         frame1tab.add(frame1tab1, text='Load Acquired Data')
         frame1tab.add(frame1tab2, text='Live Acquisition (Anchor)')
+        frame1tab.add(frame1tab3, text='Settings')
         frame1tab.pack(expand=1, fill=BOTH)
 
         frame2 = Frame(self.window, width=self.window.winfo_screenwidth() / 3, height=self.window.winfo_screenheight())
@@ -86,22 +88,24 @@ class GUI: # Class to write all code in
         frame3tab.add(frame3tab2, text='Train')
         frame3tab.pack(expand=1, fill=BOTH)
 
+        self.yticks = 5
+        self.xticks = 8
+
+        self.yslider = Scale(frame1tab3, from_=1, to=1000, orient=VERTICAL, command=self.updateValue)
+        self.yslider.set(self.yticks)
+        self.yslider.pack()
+
+        self.xslider = Scale(frame1tab3, from_=1, to=1000, orient=HORIZONTAL, command=self.updateValue)
+        self.xslider.set(self.xticks)
+        self.xslider.pack()
+
         frame1.place(relx=0, y=0, relwidth=1/3, relheight=0.98)
         frame2.place(relx=1/3, y=0, relwidth=1/3, relheight=0.98)
         frame3.place(relx=2/3, y=0, relwidth=1/3, relheight=0.98)
 
+        self.updateValue(self)
+
         ttk.Button(frame1tab1, text="Open", command=self.openFile).pack(side=TOP)
-
-        self.yticks = 40
-        self.xticks = 35
-
-        self.yslider = Scale(frame1tab1, from_=1, to=300, orient=VERTICAL, command=self.updateValue)
-        self.yslider.set(self.yticks)
-        self.yslider.pack()
-
-        self.xslider = Scale(frame1tab1, from_=1, to=300, orient=HORIZONTAL, command=self.updateValue)
-        self.xslider.set(self.xticks)
-        self.xslider.pack()
 
         # Key Bindings
         self.window.bind("f", self.toggleFullScreen)
@@ -116,12 +120,19 @@ class GUI: # Class to write all code in
         self.window.mainloop()
 
     def updateValue(self, event):
-        self.xticks = self.xslider.get()
-        self.yticks = self.yslider.get()
+
         if self.x_coords and self.y_coords:
+            # self.xticks = (max(self.x_coords) - min(self.x_coords)) / 12.5
+            # self.yticks = (max(self.y_coords) - min(self.y_coords)) / 20
+            # self.yslider.set(self.yticks)
+            # self.xslider.set(self.xticks)
+            self.xticks = self.xslider.get()
+            self.yticks = self.yslider.get()
             self.ax.set_xticks(np.arange(min(self.x_coords), max(self.x_coords) + 1, self.xticks))
             self.ax.set_yticks(np.arange(min(self.y_coords), max(self.y_coords) + 1, self.yticks))
         else:
+            self.xticks = self.xslider.get()
+            self.yticks = self.yslider.get()
             self.ax.set_xticks(np.arange(0, 100 + 1, self.xticks))
             self.ax.set_yticks(np.arange(0, 100 + 1, self.yticks))
         self.figure.canvas.draw()
@@ -144,12 +155,11 @@ class GUI: # Class to write all code in
         self.window.attributes("-fullscreen", self.fullScreen)
 
     def plotGraph(self):
-        self.ax.scatter(self.x_coords, self.y_coords)
-        self.ax.plot(self.x_coords, self.y_coords, label='Fluorescence')
+        self.ax.scatter(self.x_coords, self.y_coords, label="Data Points", color="lightcoral")
+        self.ax.plot(self.x_coords, self.y_coords, label='Line', color="royalblue")
         self.updateValue(self)
         self.figure.canvas.draw()
         self.figure.canvas.flush_events()
-
 
     # Opening File Functionality
     def openFile(self):
@@ -165,6 +175,8 @@ class GUI: # Class to write all code in
                     response = tk.messagebox.askquestion("Open Source File",
                                                          f"Open Source File at Filepath: \"{filename}\"?")  # Alert to check if user wants to open file
                     if response == "yes":
+                        self.x_coords = []
+                        self.y_coords = []
                         print(filename)
                         lines = [line.strip() for line in f]
                         for i in range(len(lines)):
@@ -184,7 +196,7 @@ class GUI: # Class to write all code in
                         return
             except Exception as e:  # If unable to open file
                 print(e)
-                tk.messagebox.showerror("Open Source File", f"Failed to read file at Filepath: \"{filename}\"")  # Error
+                tk.messagebox.showerror("Open Source File", f"An unknown error occured when reading \"{filename}\"")  # Error
                 return
         else:
             tk.messagebox.showwarning("Open Source File", "No File Opened")  # Warning
