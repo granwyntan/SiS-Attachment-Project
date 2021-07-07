@@ -78,6 +78,22 @@ class GUI: # Class to write all code in
         frame2tab.add(frame2tab1, text='Signal Processing')
         frame2tab.add(frame2tab2, text='Spectral Decomposition')
         frame2tab.add(frame2tab3, text='Ratiometric Analysis')
+
+        self.moving_average_on = True
+        self.signal_filtering_on = True
+
+        self.moving_average_button = Button(frame2tab1, command=self.toggleMovingAverage)
+        self.moving_average_Label = Label(frame2tab1, text="Moving Average")
+        self.toggleMovingAverage()
+        self.moving_average_button.grid(row=0, column=0,sticky=NSEW)
+        self.moving_average_Label.grid(row=0, column=1,sticky=NSEW)
+
+        self.signal_filtering_button = Button(frame2tab1, bd=0, command=self.toggleSignalFiltering)
+        self.signal_filtering_Label = Label(frame2tab1, text="Signal Filtering")
+        self.toggleSignalFiltering()
+        self.signal_filtering_button.grid(row=1, column=0, sticky=NSEW)
+        self.signal_filtering_Label.grid(row=1, column=1,sticky=NSEW)
+
         frame2tab.pack(expand=1, fill=BOTH)
 
         frame3 = Frame(self.window, width=self.window.winfo_screenwidth() / 3, height=self.window.winfo_screenheight())
@@ -88,15 +104,15 @@ class GUI: # Class to write all code in
         frame3tab.add(frame3tab2, text='Train')
         frame3tab.pack(expand=1, fill=BOTH)
 
-        self.yticks = 5
-        self.xticks = 8
+        self.xticks = IntVar(value=8)
+        self.yticks = IntVar(value=5)
 
-        self.yslider = Scale(frame1tab3, from_=1, to=1000, orient=VERTICAL, command=self.updateValue)
-        self.yslider.set(self.yticks)
+        self.yslider = Scale(frame1tab3, from_=1, to=1000, orient=VERTICAL, command=self.updateValue, variable=self.yticks)
+        # self.yslider.set(self.yticks.get())
         self.yslider.pack()
 
-        self.xslider = Scale(frame1tab3, from_=1, to=1000, orient=HORIZONTAL, command=self.updateValue)
-        self.xslider.set(self.xticks)
+        self.xslider = Scale(frame1tab3, from_=1, to=1000, orient=HORIZONTAL, command=self.updateValue, variable=self.xticks)
+        # self.xslider.set(self.xticks)
         self.xslider.pack()
 
         frame1.place(relx=0, y=0, relwidth=1/3, relheight=0.98)
@@ -119,22 +135,29 @@ class GUI: # Class to write all code in
         # Main Loop
         self.window.mainloop()
 
-    def updateValue(self, event):
-
-        if self.x_coords and self.y_coords:
-            # self.xticks = (max(self.x_coords) - min(self.x_coords)) / 12.5
-            # self.yticks = (max(self.y_coords) - min(self.y_coords)) / 20
-            # self.yslider.set(self.yticks)
-            # self.xslider.set(self.xticks)
-            self.xticks = self.xslider.get()
-            self.yticks = self.yslider.get()
-            self.ax.set_xticks(np.arange(min(self.x_coords), max(self.x_coords) + 1, self.xticks))
-            self.ax.set_yticks(np.arange(min(self.y_coords), max(self.y_coords) + 1, self.yticks))
+    def toggleMovingAverage(self):
+        if self.moving_average_on:
+            self.moving_average_Label.config(fg="red")
+            self.moving_average_on = False
         else:
-            self.xticks = self.xslider.get()
-            self.yticks = self.yslider.get()
-            self.ax.set_xticks(np.arange(0, 100 + 1, self.xticks))
-            self.ax.set_yticks(np.arange(0, 100 + 1, self.yticks))
+            self.moving_average_Label.config(fg="green")
+            self.moving_average_on = True
+
+    def toggleSignalFiltering(self):
+        if self.signal_filtering_on:
+            self.signal_filtering_Label.config(fg="red")
+            self.signal_filtering_on = False
+        else:
+            self.signal_filtering_Label.config(fg="green")
+            self.signal_filtering_on = True
+
+    def updateValue(self, event):
+        if self.x_coords and self.y_coords:
+            self.ax.set_xticks(np.arange(min(self.x_coords), max(self.x_coords) + 1, self.xticks.get()))
+            self.ax.set_yticks(np.arange(min(self.y_coords), max(self.y_coords) + 1, self.yticks.get()))
+        else:
+            self.ax.set_xticks(np.arange(0, 100 + 1, self.xticks.get()))
+            self.ax.set_yticks(np.arange(0, 100 + 1, self.yticks.get()))
         self.figure.canvas.draw()
         self.figure.canvas.flush_events()
 
@@ -157,6 +180,10 @@ class GUI: # Class to write all code in
     def plotGraph(self):
         self.ax.scatter(self.x_coords, self.y_coords, label="Data Points", color="lightcoral")
         self.ax.plot(self.x_coords, self.y_coords, label='Line', color="royalblue")
+        self.xticks.set((max(self.x_coords) - min(self.x_coords)) / 12.5)
+        self.yticks.set((max(self.y_coords) - min(self.y_coords)) / 20)
+        self.xslider.config(from_=min(self.x_coords), to=max(self.x_coords))
+        self.yslider.config(from_=min(self.y_coords), to=max(self.y_coords))
         self.updateValue(self)
         self.figure.canvas.draw()
         self.figure.canvas.flush_events()
