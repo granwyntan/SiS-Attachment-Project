@@ -92,6 +92,17 @@ class GUI: # Class to write all code in
 
         ttk.Button(frame1tab1, text="Open", command=self.openFile).pack(side=TOP)
 
+        self.yticks = 40
+        self.xticks = 35
+
+        self.yslider = Scale(frame1tab1, from_=1, to=300, orient=VERTICAL, command=self.updateValue)
+        self.yslider.set(self.yticks)
+        self.yslider.pack()
+
+        self.xslider = Scale(frame1tab1, from_=1, to=300, orient=HORIZONTAL, command=self.updateValue)
+        self.xslider.set(self.xticks)
+        self.xslider.pack()
+
         # Key Bindings
         self.window.bind("f", self.toggleFullScreen)
         self.window.bind("<F11>", self.toggleFullScreen)
@@ -103,6 +114,18 @@ class GUI: # Class to write all code in
 
         # Main Loop
         self.window.mainloop()
+
+    def updateValue(self, event):
+        self.xticks = self.xslider.get()
+        self.yticks = self.yslider.get()
+        if self.x_coords and self.y_coords:
+            self.ax.set_xticks(np.arange(min(self.x_coords), max(self.x_coords) + 1, self.xticks))
+            self.ax.set_yticks(np.arange(min(self.y_coords), max(self.y_coords) + 1, self.yticks))
+        else:
+            self.ax.set_xticks(np.arange(0, 100 + 1, self.xticks))
+            self.ax.set_yticks(np.arange(0, 100 + 1, self.yticks))
+        self.figure.canvas.draw()
+        self.figure.canvas.flush_events()
 
     def on_key_press(self, event):
         print("you pressed {}".format(event.key))
@@ -123,8 +146,7 @@ class GUI: # Class to write all code in
     def plotGraph(self):
         self.ax.scatter(self.x_coords, self.y_coords)
         self.ax.plot(self.x_coords, self.y_coords, label='Fluorescence')
-        self.ax.set_xticks(np.arange(min(self.x_coords), max(self.x_coords) + 1, 35))
-        self.ax.set_yticks(np.arange(min(self.y_coords), max(self.y_coords) + 1, 40))
+        self.updateValue(self)
         self.figure.canvas.draw()
         self.figure.canvas.flush_events()
 
