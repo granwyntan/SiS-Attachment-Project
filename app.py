@@ -97,6 +97,14 @@ class GUI: # Class to write all code in
         frame3tab2 = ttk.Frame(frame3tab)
         frame3tab.add(frame3tab1, text='Store')
         frame3tab.add(frame3tab2, text='Train')
+        selected_item = StringVar(self.window)
+        dropdown_options = ["Option 1",
+                            "Option 2",
+                            "Option 3"]
+        selected_item.set(dropdown_options[0])
+        dropdown_menu = OptionMenu(frame3tab1, selected_item, *dropdown_options)
+        dropdown_menu.pack()
+
         frame3tab.pack(expand=1, fill=BOTH)
 
         self.xticks = IntVar(value=8)
@@ -177,8 +185,8 @@ class GUI: # Class to write all code in
         self.ax.plot(self.x_coords, self.y_coords, label='Line', color="royalblue")
         self.xticks.set((max(self.x_coords) - min(self.x_coords)) / 12.5)
         self.yticks.set((max(self.y_coords) - min(self.y_coords)) / 20)
-        self.xslider.config(from_=min(self.x_coords), to=max(self.x_coords))
-        self.yslider.config(from_=min(self.y_coords), to=max(self.y_coords))
+        self.xslider.config(from_=self.xticks.get(), to=(max(self.x_coords) - min(self.x_coords)))
+        self.yslider.config(from_=self.yticks.get(), to=(max(self.y_coords) - min(self.y_coords)))
         self.updateValue(self)
         self.figure.canvas.draw()
         self.figure.canvas.flush_events()
