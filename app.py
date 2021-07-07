@@ -82,17 +82,12 @@ class GUI: # Class to write all code in
         self.moving_average_on = True
         self.signal_filtering_on = True
 
-        self.moving_average_button = Button(frame2tab1, command=self.toggleMovingAverage)
-        self.moving_average_Label = Label(frame2tab1, text="Moving Average")
+        self.moving_average = Checkbutton(frame2tab1, bd=0, command=self.toggleMovingAverage, text="Moving Average")
         self.toggleMovingAverage()
-        self.moving_average_button.grid(row=0, column=0,sticky=NSEW)
-        self.moving_average_Label.grid(row=0, column=1,sticky=NSEW)
-
-        self.signal_filtering_button = Button(frame2tab1, bd=0, command=self.toggleSignalFiltering)
-        self.signal_filtering_Label = Label(frame2tab1, text="Signal Filtering")
+        self.moving_average.grid(row=0, column=0, sticky=NSEW)
+        self.signal_filtering = Checkbutton(frame2tab1, bd=0, command=self.toggleSignalFiltering, text="Signal Filtering")
         self.toggleSignalFiltering()
-        self.signal_filtering_button.grid(row=1, column=0, sticky=NSEW)
-        self.signal_filtering_Label.grid(row=1, column=1,sticky=NSEW)
+        self.signal_filtering.grid(row=1, column=0, sticky=NSEW)
 
         frame2tab.pack(expand=1, fill=BOTH)
 
@@ -137,18 +132,18 @@ class GUI: # Class to write all code in
 
     def toggleMovingAverage(self):
         if self.moving_average_on:
-            self.moving_average_Label.config(fg="red")
+            self.moving_average.config(fg="red")
             self.moving_average_on = False
         else:
-            self.moving_average_Label.config(fg="green")
+            self.moving_average.config(fg="green")
             self.moving_average_on = True
 
     def toggleSignalFiltering(self):
         if self.signal_filtering_on:
-            self.signal_filtering_Label.config(fg="red")
+            self.signal_filtering.config(fg="red")
             self.signal_filtering_on = False
         else:
-            self.signal_filtering_Label.config(fg="green")
+            self.signal_filtering.config(fg="green")
             self.signal_filtering_on = True
 
     def updateValue(self, event):
