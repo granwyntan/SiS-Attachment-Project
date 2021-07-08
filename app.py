@@ -96,13 +96,13 @@ class GUI: # Class to write all code in
 
         Button(frame2tab1, text="Save Moving Average Data", command=lambda: self.saveFile("movingaverage", theycoords=self.moving_averages)).grid(row=0, column=1, sticky=NSEW)
         Button(frame2tab1, text="Save Filtered Low Pass Data",
-               command=lambda: self.saveFile(self, filename="lowpass", theycoords=self.moving_averages)).grid(
+               command=lambda: self.saveFile(filename="lowpass", theycoords=self.filteredLowPass)).grid(
             row=1, column=1, sticky=NSEW)
         Button(frame2tab1, text="Save Filtered High Pass Data",
-               command=lambda: self.saveFile(self, filename="highpass", theycoords=self.moving_averages)).grid(
+               command=lambda: self.saveFile(filename="highpass", theycoords=self.filteredHighPass)).grid(
             row=1, column=2, sticky=NSEW)
         Button(frame2tab1, text="Save Filtered Band Pass Data",
-               command=lambda: self.saveFile(self, filename="bandpass", theycoords=self.moving_averages)).grid(
+               command=lambda: self.saveFile(filename="bandpass", theycoords=self.filteredBandPass)).grid(
             row=1, column=3, sticky=NSEW)
 
         frame2tab.pack(expand=1, fill=BOTH)
@@ -124,6 +124,7 @@ class GUI: # Class to write all code in
         frame3tab.pack(expand=1, fill=BOTH)
 
         # Settings
+        ttk.Button(frame1tab3, text="Clear Chart", command=self.clearData).pack(side=TOP)
 
         self.xticks = IntVar(value=8)
         self.yticks = IntVar(value=5)
@@ -140,12 +141,16 @@ class GUI: # Class to write all code in
         frame2.place(relx=1/3, y=0, relwidth=1/3, relheight=0.98)
         frame3.place(relx=2/3, y=0, relwidth=1/3, relheight=0.98)
 
+        self.gridOn = BooleanVar(value=True)
+        self.axesOn = StringVar(value='on')
+        # TODO: Setting to turn grid on and off
+        # TODO: Setting to turn axes and labels on and off
         # plt.grid(False)
         # plt.axis('off')
 
         self.updateValue(self)
 
-        ttk.Button(frame1tab1, text="Open", command=self.openFile).pack(side=TOP)
+        ttk.Button(frame1tab1, text="Open Files", command=self.openFile).pack(side=TOP)
 
         # Key Bindings
         self.window.bind("f", self.toggleFullScreen)
@@ -176,7 +181,7 @@ class GUI: # Class to write all code in
             self.signal_filtering_on = True
 
     def updateValue(self, event):
-        if self.x_coords and self.y_coords:
+        if self.x_coords != [] and self.y_coords != []:
             self.ax.set_xticks(np.arange(min(self.x_coords), max(self.x_coords) + 1, self.xticks.get()))
             self.ax.set_yticks(np.arange(min(self.y_coords), max(self.y_coords) + 1, self.yticks.get()))
         else:
@@ -189,9 +194,6 @@ class GUI: # Class to write all code in
         print("you pressed {}".format(event.key))
         key_press_handler(event, tk.canvas, tk.toolbar)
 
-    # # Graph
-    # def Graph(self):
-
     # Full Screen Toggles
     def toggleFullScreen(self, event):
         self.fullScreen = not self.fullScreen
@@ -201,34 +203,50 @@ class GUI: # Class to write all code in
         self.fullScreen = False
         self.window.attributes("-fullscreen", self.fullScreen)
 
+    # Main Graph Plotting Function
     def plotGraph(self):
+        # if self.x_coords and self.y_coords:
         self.ax.scatter(self.x_coords, self.y_coords, label="Data Points", color="lightcoral")
         self.ax.plot(self.x_coords, self.y_coords, label='Line', color="royalblue")
         self.xticks.set((max(self.x_coords) - min(self.x_coords)) / 12.5)
         self.yticks.set((max(self.y_coords) - min(self.y_coords)) / 20)
         self.moving_averages = self.movingaverage(self.y_coords, 4)
+        self.signalFiltering(self.y_coords)
         self.ax.plot(self.x_coords, self.moving_averages, label="Moving Average")
-
-
-        b, a = scipy.signal.butter(3, 0.05, 'lowpass')
-        self.filteredLowPass = scipy.signal.filtfilt(b, a, self.y_coords)
-
-        b, a = scipy.signal.butter(3, 0.05, 'highpass')
-        self.filteredHighPass = scipy.signal.filtfilt(b, a, self.y_coords)
-
-        b, a = scipy.signal.butter(3, [.01, .05], 'band')
-        self.filteredBandPass = scipy.signal.lfilter(b, a, self.y_coords)
-
         self.ax.plot(self.x_coords, self.filteredLowPass, label="Filtered Low Pass")
         self.ax.plot(self.x_coords, self.filteredHighPass, label="Filtered High Pass")
         self.ax.plot(self.x_coords, self.filteredBandPass, label="Filtered Band Pass")
         self.xslider.config(from_=self.xticks.get(), to=(max(self.x_coords) - min(self.x_coords)))
         self.yslider.config(from_=self.yticks.get(), to=(max(self.y_coords) - min(self.y_coords)))
+        # self.ax.plt.gca()
         self.updateValue(self)
         self.ax.legend()
+        self.ax.relim()
+        self.ax.autoscale()
+        plt.tight_layout()
         self.figure.canvas.draw()
         self.figure.canvas.flush_events()
 
+    def clearData(self):
+        self.x_coords = self.y_coords = []
+        self.ax.clear()
+        self.ax.plot(self.x_coords, self.y_coords)
+        self.xslider.config(from_=0, to=100 + 1)
+        self.yslider.config(from_=0, to=100 + 1)
+        self.xticks.set(8)
+        self.yticks.set(5)
+        self.ax.grid()
+        self.ax.set_xlabel("Wavelength (nm)")
+        self.ax.set_ylabel("Intensity")
+        self.ax.set_title("Raw Data")
+        self.updateValue(self)
+        self.ax.relim()
+        self.ax.autoscale()
+        self.ax.set_ylim(0, 100)
+        self.ax.set_xlim(0, 96)
+        self.figure.canvas.draw()
+        self.figure.canvas.flush_events()
+    # Filters
     def movingaverage(self, interval, window_size):
         # np.convolve
         window = np.ones(int(window_size)) / float(window_size)
@@ -239,14 +257,28 @@ class GUI: # Class to write all code in
         # ret[window_size:] = ret[window_size:] - ret[:-window_size]
         # return ret[window_size - 1:] / window_size
 
+    def signalFiltering(self, data):
+        b, a = scipy.signal.butter(3, 0.05, 'lowpass')
+        self.filteredLowPass = scipy.signal.filtfilt(b, a, data)
+
+        b, a = scipy.signal.butter(3, 0.05, 'highpass')
+        self.filteredHighPass = scipy.signal.filtfilt(b, a, data)
+
+        b, a = scipy.signal.butter(3, [.01, .05], 'band')
+        self.filteredBandPass = scipy.signal.lfilter(b, a, data)
+
     # Saving File Functionality
     def saveFile(self, filename, theycoords):
-        f = filedialog.asksaveasfile(initialfile=f'{filename}.txt', defaultextension=".txt", filetypes=[("Text Documents", "*.txt"), ("All Files", "*.*")])
-        data = ""
-        for i in range(len(self.x_coords)):
-            data += f"{self.x_coords[i]} {theycoords[i]}\n"
-        f.write(data)
-        f.close()
+        if self.x_coords and self.y_coords:
+            f = filedialog.asksaveasfile(initialfile=f'{filename}.txt', defaultextension=".txt", filetypes=[("Text Documents", "*.txt"), ("All Files", "*.*")])
+            data = ""
+            for i in range(len(self.x_coords)):
+                data += f"{self.x_coords[i]} {theycoords[i]}\n"
+            f.write(data)
+            f.close()
+        else:
+            tk.messagebox.showinfo("Save to File", "No Data Loaded")
+
 
     # Opening File Functionality
     def openFile(self):
@@ -274,20 +306,16 @@ class GUI: # Class to write all code in
                             self.x_coords.append(x)
                             self.y_coords.append(y)
 
-                        # TODO: Embed in Tk - https://matplotlib.org/stable/gallery/user_interfaces/embedding_in_tk_sgskip.html
-                        # TODO: Checkboxes for various filters
-                        # TODO: Implement filters
                         self.plotGraph()
                         return
                     else:
                         return
             except Exception as e:  # If unable to open file
                 print(e)
-                tk.messagebox.showerror("Open Source File", f"An unknown error occured when reading \"{filename}\"")  # Error
+                tk.messagebox.showerror("Open Source File", f"An unknown error occurred when reading \"{filename}\"")  # Error
                 return
         else:
             tk.messagebox.showwarning("Open Source File", "No File Opened")  # Warning
-            # tk.messagebox.showinfo("Open Source File", "No File Opened")
             return
 
 
