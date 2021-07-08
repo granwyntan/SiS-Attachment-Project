@@ -11,6 +11,8 @@ from matplotlib.backends.backend_tkagg import (FigureCanvasTkAgg, NavigationTool
 # Implement the default Matplotlib key bindings.
 from matplotlib.backend_bases import key_press_handler
 from matplotlib.figure import Figure
+import scipy.io.wavfile
+import scipy.signal
 import os
 import time
 
@@ -97,14 +99,6 @@ class GUI: # Class to write all code in
         frame3tab2 = ttk.Frame(frame3tab)
         frame3tab.add(frame3tab1, text='Store')
         frame3tab.add(frame3tab2, text='Train')
-        selected_item = StringVar(self.window)
-        dropdown_options = ["Option 1",
-                            "Option 2",
-                            "Option 3"]
-        selected_item.set(dropdown_options[0])
-        dropdown_menu = OptionMenu(frame3tab1, selected_item, *dropdown_options)
-        dropdown_menu.pack()
-
         frame3tab.pack(expand=1, fill=BOTH)
 
         self.xticks = IntVar(value=8)
@@ -138,12 +132,117 @@ class GUI: # Class to write all code in
         # Main Loop
         self.window.mainloop()
 
+    def singal_filtering(self):
+        # read ECG data from the WAV file
+        sampleRate, data = scipy.io.wavfile.read('ecg.wav')
+        times = np.arange(len(data)) / sampleRate
+
+        # apply a 3-pole lowpass filter at 0.1x Nyquist frequency
+        b, a = scipy.signal.butter(3, 0.1)
+        filtered = scipy.signal.filtfilt(b, a, data)
+        # plot the original data next to the filtered data
+
+        plt.figure(figsize=(10, 4))
+
+        plt.subplot(121)
+        plt.plot(times, data)
+        plt.title("ECG Signal with Noise")
+        plt.margins(0, .05)
+
+        plt.subplot(122)
+        plt.plot(times, filtered)
+        plt.title("Filtered ECG Signal")
+        plt.margins(0, .05)
+
+        plt.tight_layout()
+        plt.show()
+
+        #cut off frequency
+        plt.plot(data, '.-', alpha=.5, label="data")
+
+        for cutoff in [.03, .05, .1]:
+            b, a = scipy.signal.butter(3, cutoff)
+            filtered = scipy.signal.filtfilt(b, a, data)
+            label = f"{int(cutoff * 100):d}%"
+            plt.plot(filtered, label=label)
+
+        plt.legend()
+        plt.axis([350, 500, None, None])
+        plt.title("Effect of Different Cutoff Values")
+        plt.show()
+
+        # A small portion of data will be inspected for demonstration
+        #Improve Edges with Gustafsson’s Method
+        segment = data[350:400]
+
+        filtered = scipy.signal.filtfilt(b, a, segment)
+        filteredGust = scipy.signal.filtfilt(b, a, segment, method="gust")
+
+        plt.plot(segment, '.-', alpha=.5, label="data")
+        plt.plot(filtered, 'k--', label="padded")
+        plt.plot(filteredGust, 'k', label="Gustafsson")
+        plt.legend()
+        plt.title("Padded Data vs. Gustafsson’s Method")
+        plt.show()
+
+        #band pass filter
+        b, a = scipy.signal.butter(3, 0.05, 'lowpass')
+        filteredLowPass = scipy.signal.filtfilt(b, a, data)
+
+        b, a = scipy.signal.butter(3, 0.05, 'highpass')
+        filteredHighPass = scipy.signal.filtfilt(b, a, data)
+
+        b, a = scipy.signal.butter(3, [.01, .05], 'band')
+        filteredBandPass = scipy.signal.lfilter(b, a, data)
+
+
+        # filter the data using convolution
+        # create a normalized Hanning window
+        windowSize = 40
+        window = np.hanning(windowSize)
+        window = window / window.sum()
+
+        filtered = np.convolve(window, data, mode='valid')
+        plt.subplot(131)
+        #plt.plot(kernel)
+        plt.title("Window")
+
+        plt.subplot(132)
+        plt.plot(data)
+        plt.title("Data")
+
+        plt.subplot(133)
+        plt.plot(filtered)
+        plt.title("Filtered")
+
+    def moving_average(self):
+        # load the csv file (Monthly average air temperatures of the city of Barcelona since 1780) into a pandas data frame
+        df= pd.read(sef.x_coords,y_coords)
+
+
+        #averaging
+        df['moving average filtered'] = df.Low.rolling(window=len(lines)).mean()
+        df['moving average unfiltered'] = df.High.rolling(window=len(lines)).mean()
+        df.head()
+
+        #plot graph
+        plt.figure(figsize=(12, 8))
+        plt.title('moving average filtered')
+        plt.plot(df.index, df[['moving average filtered', 'moving average unfiltered']])
+        plt.xlabel('x-axis')
+        plt.ylabel('y-axis')
+        plt.xticks(df.index[::12], rotation='vertical')
+        plt.legend(('moving average filtered', 'moving average unfiltered'), loc='upper right')
+        plt.show()
+
+
     def toggleMovingAverage(self):
         if self.moving_average_on:
             self.moving_average.config(fg="red")
             self.moving_average_on = False
         else:
             self.moving_average.config(fg="green")
+            self.moving_average()
             self.moving_average_on = True
 
     def toggleSignalFiltering(self):
@@ -152,6 +251,7 @@ class GUI: # Class to write all code in
             self.signal_filtering_on = False
         else:
             self.signal_filtering.config(fg="green")
+            self.singal_filtering()
             self.signal_filtering_on = True
 
     def updateValue(self, event):
@@ -185,8 +285,8 @@ class GUI: # Class to write all code in
         self.ax.plot(self.x_coords, self.y_coords, label='Line', color="royalblue")
         self.xticks.set((max(self.x_coords) - min(self.x_coords)) / 12.5)
         self.yticks.set((max(self.y_coords) - min(self.y_coords)) / 20)
-        self.xslider.config(from_=self.xticks.get(), to=(max(self.x_coords) - min(self.x_coords)))
-        self.yslider.config(from_=self.yticks.get(), to=(max(self.y_coords) - min(self.y_coords)))
+        self.xslider.config(from_=min(self.x_coords), to=max(self.x_coords))
+        self.yslider.config(from_=min(self.y_coords), to=max(self.y_coords))
         self.updateValue(self)
         self.figure.canvas.draw()
         self.figure.canvas.flush_events()
