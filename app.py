@@ -11,6 +11,7 @@ from matplotlib.backends.backend_tkagg import (FigureCanvasTkAgg, NavigationTool
 # Implement the default Matplotlib key bindings.
 from matplotlib.backend_bases import key_press_handler
 from matplotlib.figure import Figure
+import scipy.signal
 import os
 import time
 
@@ -42,10 +43,9 @@ class GUI: # Class to write all code in
         # fig = Figure(figsize=(5, 4), dpi=100)
         self.figure, self.ax = plt.subplots(figsize=(5, 4), dpi=100)
         # self.line = self.ax.plot(x, y)
-        self.ax.plot(self.x_coords, self.y_coords, label='Fluorescence')
+        self.ax.plot(self.x_coords, self.y_coords)
         # self.ax.ion()
         self.ax.grid()
-        self.ax.legend()
         self.ax.set_xlabel("Wavelength (nm)")
         self.ax.set_ylabel("Intensity")
         self.ax.set_title("Raw Data")
@@ -89,6 +89,22 @@ class GUI: # Class to write all code in
         self.toggleSignalFiltering()
         self.signal_filtering.grid(row=1, column=0, sticky=NSEW)
 
+        self.moving_averages = []
+        self.filteredLowPass = []
+        self.filteredHighPass = []
+        self.filteredBandPass = []
+
+        Button(frame2tab1, text="Save Moving Average Data", command=lambda: self.saveFile("movingaverage", theycoords=self.moving_averages)).grid(row=0, column=1, sticky=NSEW)
+        Button(frame2tab1, text="Save Filtered Low Pass Data",
+               command=lambda: self.saveFile(self, filename="lowpass", theycoords=self.moving_averages)).grid(
+            row=1, column=1, sticky=NSEW)
+        Button(frame2tab1, text="Save Filtered High Pass Data",
+               command=lambda: self.saveFile(self, filename="highpass", theycoords=self.moving_averages)).grid(
+            row=1, column=2, sticky=NSEW)
+        Button(frame2tab1, text="Save Filtered Band Pass Data",
+               command=lambda: self.saveFile(self, filename="bandpass", theycoords=self.moving_averages)).grid(
+            row=1, column=3, sticky=NSEW)
+
         frame2tab.pack(expand=1, fill=BOTH)
 
         frame3 = Frame(self.window, width=self.window.winfo_screenwidth() / 3, height=self.window.winfo_screenheight())
@@ -107,6 +123,8 @@ class GUI: # Class to write all code in
 
         frame3tab.pack(expand=1, fill=BOTH)
 
+        # Settings
+
         self.xticks = IntVar(value=8)
         self.yticks = IntVar(value=5)
 
@@ -121,6 +139,9 @@ class GUI: # Class to write all code in
         frame1.place(relx=0, y=0, relwidth=1/3, relheight=0.98)
         frame2.place(relx=1/3, y=0, relwidth=1/3, relheight=0.98)
         frame3.place(relx=2/3, y=0, relwidth=1/3, relheight=0.98)
+
+        # plt.grid(False)
+        # plt.axis('off')
 
         self.updateValue(self)
 
@@ -187,15 +208,45 @@ class GUI: # Class to write all code in
         self.yticks.set((max(self.y_coords) - min(self.y_coords)) / 20)
         self.moving_averages = self.movingaverage(self.y_coords, 4)
         self.ax.plot(self.x_coords, self.moving_averages, label="Moving Average")
+
+
+        b, a = scipy.signal.butter(3, 0.05, 'lowpass')
+        self.filteredLowPass = scipy.signal.filtfilt(b, a, self.y_coords)
+
+        b, a = scipy.signal.butter(3, 0.05, 'highpass')
+        self.filteredHighPass = scipy.signal.filtfilt(b, a, self.y_coords)
+
+        b, a = scipy.signal.butter(3, [.01, .05], 'band')
+        self.filteredBandPass = scipy.signal.lfilter(b, a, self.y_coords)
+
+        self.ax.plot(self.x_coords, self.filteredLowPass, label="Filtered Low Pass")
+        self.ax.plot(self.x_coords, self.filteredHighPass, label="Filtered High Pass")
+        self.ax.plot(self.x_coords, self.filteredBandPass, label="Filtered Band Pass")
         self.xslider.config(from_=self.xticks.get(), to=(max(self.x_coords) - min(self.x_coords)))
         self.yslider.config(from_=self.yticks.get(), to=(max(self.y_coords) - min(self.y_coords)))
         self.updateValue(self)
+        self.ax.legend()
         self.figure.canvas.draw()
         self.figure.canvas.flush_events()
 
     def movingaverage(self, interval, window_size):
+        # np.convolve
         window = np.ones(int(window_size)) / float(window_size)
         return np.convolve(interval, window, 'same')
+
+        # cumsum
+        # ret = np.cumsum(interval, dtype=float)
+        # ret[window_size:] = ret[window_size:] - ret[:-window_size]
+        # return ret[window_size - 1:] / window_size
+
+    # Saving File Functionality
+    def saveFile(self, filename, theycoords):
+        f = filedialog.asksaveasfile(initialfile=f'{filename}.txt', defaultextension=".txt", filetypes=[("Text Documents", "*.txt"), ("All Files", "*.*")])
+        data = ""
+        for i in range(len(self.x_coords)):
+            data += f"{self.x_coords[i]} {theycoords[i]}\n"
+        f.write(data)
+        f.close()
 
     # Opening File Functionality
     def openFile(self):
