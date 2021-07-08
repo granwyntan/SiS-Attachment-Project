@@ -44,7 +44,7 @@ class GUI: # Class to write all code in
         self.figure, self.ax = plt.subplots(figsize=(5, 4), dpi=100)
         # self.line = self.ax.plot(x, y)
         self.ax.plot(self.x_coords, self.y_coords)
-        # self.ax.ion()
+        # plt.ion()
         self.ax.grid()
         self.ax.set_xlabel("Wavelength (nm)")
         self.ax.set_ylabel("Intensity")
@@ -79,14 +79,14 @@ class GUI: # Class to write all code in
         frame2tab.add(frame2tab2, text='Spectral Decomposition')
         frame2tab.add(frame2tab3, text='Ratiometric Analysis')
 
-        self.moving_average_on = True
-        self.signal_filtering_on = True
+        self.moving_average_on = False
+        self.signal_filtering_on = False
 
         self.moving_average = Checkbutton(frame2tab1, bd=0, command=self.toggleMovingAverage, text="Moving Average")
-        self.toggleMovingAverage()
+        self.setMovingAverage(self.moving_average_on)
         self.moving_average.grid(row=0, column=0, sticky=NSEW)
         self.signal_filtering = Checkbutton(frame2tab1, bd=0, command=self.toggleSignalFiltering, text="Signal Filtering")
-        self.toggleSignalFiltering()
+        self.setSignalFiltering(self.signal_filtering_on)
         self.signal_filtering.grid(row=1, column=0, sticky=NSEW)
 
         self.moving_averages = []
@@ -171,6 +171,16 @@ class GUI: # Class to write all code in
         else:
             self.moving_average.config(fg="green")
             self.moving_average_on = True
+        self.ax.lines[-4].set_visible(self.moving_average_on)
+        self.ax.legend()
+        self.figure.canvas.draw()
+        self.figure.canvas.flush_events()
+
+    def setMovingAverage(self, value):
+        if not value:
+            self.moving_average.config(fg="red")
+        else:
+            self.moving_average.config(fg="green")
 
     def toggleSignalFiltering(self):
         if self.signal_filtering_on:
@@ -179,6 +189,18 @@ class GUI: # Class to write all code in
         else:
             self.signal_filtering.config(fg="green")
             self.signal_filtering_on = True
+        self.ax.lines[-1].set_visible(self.signal_filtering_on)
+        self.ax.lines[-2].set_visible(self.signal_filtering_on)
+        self.ax.lines[-3].set_visible(self.signal_filtering_on)
+        self.ax.legend()
+        self.figure.canvas.draw()
+        self.figure.canvas.flush_events()
+
+    def setSignalFiltering(self, value):
+        if not value:
+            self.signal_filtering.config(fg="red")
+        else:
+            self.signal_filtering.config(fg="green")
 
     def updateValue(self, event):
         if self.x_coords != [] and self.y_coords != []:
@@ -212,10 +234,17 @@ class GUI: # Class to write all code in
         self.yticks.set((max(self.y_coords) - min(self.y_coords)) / 20)
         self.moving_averages = self.movingaverage(self.y_coords, 4)
         self.signalFiltering(self.y_coords)
-        self.ax.plot(self.x_coords, self.moving_averages, label="Moving Average")
-        self.ax.plot(self.x_coords, self.filteredLowPass, label="Filtered Low Pass")
-        self.ax.plot(self.x_coords, self.filteredHighPass, label="Filtered High Pass")
-        self.ax.plot(self.x_coords, self.filteredBandPass, label="Filtered Band Pass")
+        self.mvavg = self.ax.plot(self.x_coords, self.moving_averages, label="Moving Average")
+        self.lp = self.ax.plot(self.x_coords, self.filteredLowPass, label="Filtered Low Pass")
+        self.hp = self.ax.plot(self.x_coords, self.filteredHighPass, label="Filtered High Pass")
+        self.bp = self.ax.plot(self.x_coords, self.filteredBandPass, label="Filtered Band Pass")
+        print(type(self.mvavg))
+        self.ax.lines[-1].set_visible(self.signal_filtering_on)
+        self.ax.lines[-2].set_visible(self.signal_filtering_on)
+        self.ax.lines[-3].set_visible(self.signal_filtering_on)
+        self.ax.lines[-4].set_visible(self.moving_average_on)
+        self.median_filtered_data = scipy.signal.medfilt(self.y_coords, kernel_size=7)
+        self.ax.plot(self.x_coords, self.median_filtered_data, label="Median Filtered Data")
         self.xslider.config(from_=self.xticks.get(), to=(max(self.x_coords) - min(self.x_coords)))
         self.yslider.config(from_=self.yticks.get(), to=(max(self.y_coords) - min(self.y_coords)))
         # self.ax.plt.gca()
