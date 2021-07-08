@@ -185,11 +185,17 @@ class GUI: # Class to write all code in
         self.ax.plot(self.x_coords, self.y_coords, label='Line', color="royalblue")
         self.xticks.set((max(self.x_coords) - min(self.x_coords)) / 12.5)
         self.yticks.set((max(self.y_coords) - min(self.y_coords)) / 20)
+        self.moving_averages = self.movingaverage(self.y_coords, 4)
+        self.ax.plot(self.x_coords, self.moving_averages, label="Moving Average")
         self.xslider.config(from_=self.xticks.get(), to=(max(self.x_coords) - min(self.x_coords)))
         self.yslider.config(from_=self.yticks.get(), to=(max(self.y_coords) - min(self.y_coords)))
         self.updateValue(self)
         self.figure.canvas.draw()
         self.figure.canvas.flush_events()
+
+    def movingaverage(self, interval, window_size):
+        window = np.ones(int(window_size)) / float(window_size)
+        return np.convolve(interval, window, 'same')
 
     # Opening File Functionality
     def openFile(self):
