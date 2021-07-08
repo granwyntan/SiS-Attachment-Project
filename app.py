@@ -137,9 +137,9 @@ class GUI: # Class to write all code in
         # self.xslider.set(self.xticks)
         self.xslider.pack()
 
-        frame1.place(relx=0, y=0, relwidth=1/3, relheight=0.98)
-        frame2.place(relx=1/3, y=0, relwidth=1/3, relheight=0.98)
-        frame3.place(relx=2/3, y=0, relwidth=1/3, relheight=0.98)
+        frame1.place(relx=0, y=0, relwidth=1/3, relheight=1)
+        frame2.place(relx=1/3, y=0, relwidth=1/3, relheight=1)
+        frame3.place(relx=2/3, y=0, relwidth=1/3, relheight=1)
 
         self.gridOn = BooleanVar(value=True)
         self.axesOn = StringVar(value='on')
@@ -158,8 +158,8 @@ class GUI: # Class to write all code in
         self.window.bind("<Escape>", self.quitFullScreen)
 
         # Status Bar
-        status = Label(self.window, text="By Granwyn Tan. v0.0.1", bd=1, relief=SUNKEN, anchor=SE)
-        status.place(x=0, rely=.98, relwidth=1, relheight=0.02)
+        # status = Label(self.window, text="By Granwyn Tan. v0.0.1", bd=1, relief=SUNKEN, anchor=SE)
+        # status.place(x=0, rely=.98, relwidth=1, relheight=0.02)
 
         # Main Loop
         self.window.mainloop()
@@ -171,7 +171,7 @@ class GUI: # Class to write all code in
         else:
             self.moving_average.config(fg="green")
             self.moving_average_on = True
-        self.ax.lines[-4].set_visible(self.moving_average_on)
+        self.ax.lines[2].set_visible(self.moving_average_on)
         self.ax.legend()
         self.figure.canvas.draw()
         self.figure.canvas.flush_events()
@@ -189,9 +189,9 @@ class GUI: # Class to write all code in
         else:
             self.signal_filtering.config(fg="green")
             self.signal_filtering_on = True
-        self.ax.lines[-1].set_visible(self.signal_filtering_on)
-        self.ax.lines[-2].set_visible(self.signal_filtering_on)
-        self.ax.lines[-3].set_visible(self.signal_filtering_on)
+        self.ax.lines[5].set_visible(self.signal_filtering_on)
+        self.ax.lines[4].set_visible(self.signal_filtering_on)
+        self.ax.lines[3].set_visible(self.signal_filtering_on)
         self.ax.legend()
         self.figure.canvas.draw()
         self.figure.canvas.flush_events()
@@ -239,10 +239,10 @@ class GUI: # Class to write all code in
         self.hp = self.ax.plot(self.x_coords, self.filteredHighPass, label="Filtered High Pass")
         self.bp = self.ax.plot(self.x_coords, self.filteredBandPass, label="Filtered Band Pass")
         print(type(self.mvavg))
-        self.ax.lines[-1].set_visible(self.signal_filtering_on)
-        self.ax.lines[-2].set_visible(self.signal_filtering_on)
-        self.ax.lines[-3].set_visible(self.signal_filtering_on)
-        self.ax.lines[-4].set_visible(self.moving_average_on)
+        self.ax.lines[5].set_visible(self.signal_filtering_on)
+        self.ax.lines[4].set_visible(self.signal_filtering_on)
+        self.ax.lines[3].set_visible(self.signal_filtering_on)
+        self.ax.lines[2].set_visible(self.moving_average_on)
         self.median_filtered_data = scipy.signal.medfilt(self.y_coords, kernel_size=7)
         self.ax.plot(self.x_coords, self.median_filtered_data, label="Median Filtered Data")
         self.xslider.config(from_=self.xticks.get(), to=(max(self.x_coords) - min(self.x_coords)))
