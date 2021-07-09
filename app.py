@@ -38,7 +38,8 @@ class GUI: # Class to write all code in
         self.window.attributes("-fullscreen", self.fullScreen) # Set fullscreen
         self.window.geometry(f"{self.window.winfo_screenwidth()}x{self.window.winfo_screenheight()}") # make window fill entire screen
 
-        frame1 = Frame(self.window, width=self.window.winfo_screenwidth()/3, height=self.window.winfo_screenheight())
+        frame1top = Frame(self.window)
+        frame1 = Frame(self.window)
 
         # fig = Figure(figsize=(5, 4), dpi=100)
         self.figure, self.ax = plt.subplots(figsize=(5, 4), dpi=100)
@@ -50,15 +51,12 @@ class GUI: # Class to write all code in
         self.ax.set_ylabel("Intensity")
         self.ax.set_title("Raw Data")
 
-        canvas = FigureCanvasTkAgg(self.figure, master=frame1)  # A tk.DrawingArea.
+        canvas = FigureCanvasTkAgg(self.figure, master=frame1top)  # A tk.DrawingArea.
         canvas.draw()
         canvas.get_tk_widget().pack(side=tk.TOP, fill=tk.BOTH, expand=1)
-
-        toolbar = NavigationToolbar2Tk(canvas, frame1)
+        toolbar = NavigationToolbar2Tk(canvas, frame1top)
         toolbar.update()
         canvas.get_tk_widget().pack(side=tk.TOP, fill=tk.BOTH, expand=1)
-
-        canvas.mpl_connect("key_press_event", self.on_key_press)
 
         frame1tab = ttk.Notebook(frame1)  # tab controller
         # tab1 = ttk.LabelFrame(tabControl, text="FrameName") can use Label Frame and set text if required
@@ -70,7 +68,7 @@ class GUI: # Class to write all code in
         frame1tab.add(frame1tab3, text='Settings')
         frame1tab.pack(expand=1, fill=BOTH)
 
-        frame2 = Frame(self.window, width=self.window.winfo_screenwidth() / 3, height=self.window.winfo_screenheight())
+        frame2 = Frame(self.window)
         frame2tab = ttk.Notebook(frame2)  # tab controller
         frame2tab1 = ttk.Frame(frame2tab)
         frame2tab2 = ttk.Frame(frame2tab)
@@ -107,7 +105,7 @@ class GUI: # Class to write all code in
 
         frame2tab.pack(expand=1, fill=BOTH)
 
-        frame3 = Frame(self.window, width=self.window.winfo_screenwidth() / 3, height=self.window.winfo_screenheight())
+        frame3 = Frame(self.window)
         frame3tab = ttk.Notebook(frame3)  # tab controller
         frame3tab1 = ttk.Frame(frame3tab)  # create
         frame3tab2 = ttk.Frame(frame3tab)
@@ -137,7 +135,8 @@ class GUI: # Class to write all code in
         # self.xslider.set(self.xticks)
         self.xslider.pack()
 
-        frame1.place(relx=0, y=0, relwidth=1/3, relheight=1)
+        frame1top.place(relx=0, y=0, relwidth=1 / 3, relheight=5/8)
+        frame1.place(relx=0, rely=5/8, relwidth=1/3, relheight=3/8)
         frame2.place(relx=1/3, y=0, relwidth=1/3, relheight=1)
         frame3.place(relx=2/3, y=0, relwidth=1/3, relheight=1)
 
@@ -171,7 +170,8 @@ class GUI: # Class to write all code in
         else:
             self.moving_average.config(fg="green")
             self.moving_average_on = True
-        self.ax.lines[2].set_visible(self.moving_average_on)
+        if len(self.ax.lines) > 2:
+            self.ax.lines[2].set_visible(self.moving_average_on)
         self.ax.legend()
         self.figure.canvas.draw()
         self.figure.canvas.flush_events()
@@ -189,9 +189,10 @@ class GUI: # Class to write all code in
         else:
             self.signal_filtering.config(fg="green")
             self.signal_filtering_on = True
-        self.ax.lines[5].set_visible(self.signal_filtering_on)
-        self.ax.lines[4].set_visible(self.signal_filtering_on)
-        self.ax.lines[3].set_visible(self.signal_filtering_on)
+        if len(self.ax.lines) > 2:
+            self.ax.lines[5].set_visible(self.signal_filtering_on)
+            self.ax.lines[4].set_visible(self.signal_filtering_on)
+            self.ax.lines[3].set_visible(self.signal_filtering_on)
         self.ax.legend()
         self.figure.canvas.draw()
         self.figure.canvas.flush_events()
@@ -211,10 +212,6 @@ class GUI: # Class to write all code in
             self.ax.set_yticks(np.arange(0, 100 + 1, self.yticks.get()))
         self.figure.canvas.draw()
         self.figure.canvas.flush_events()
-
-    def on_key_press(self, event):
-        print("you pressed {}".format(event.key))
-        key_press_handler(event, tk.canvas, tk.toolbar)
 
     # Full Screen Toggles
     def toggleFullScreen(self, event):
