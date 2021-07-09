@@ -80,28 +80,31 @@ class GUI: # Class to write all code in
         self.moving_average_on = False
         self.signal_filtering_on = False
 
+        Label(frame2tab1, text="Filters", anchor='w').grid(row=0, column=0, sticky=NSEW)
         self.moving_average = Checkbutton(frame2tab1, bd=0, command=self.toggleMovingAverage, text="Moving Average")
         self.setMovingAverage(self.moving_average_on)
-        self.moving_average.grid(row=0, column=0, sticky=NSEW)
+        self.moving_average.grid(row=1, column=0, sticky=NSEW)
         self.signal_filtering = Checkbutton(frame2tab1, bd=0, command=self.toggleSignalFiltering, text="Signal Filtering")
         self.setSignalFiltering(self.signal_filtering_on)
-        self.signal_filtering.grid(row=1, column=0, sticky=NSEW)
+        self.signal_filtering.grid(row=2, column=0, sticky=NSEW)
 
         self.moving_averages = []
         self.filteredLowPass = []
         self.filteredHighPass = []
         self.filteredBandPass = []
 
-        Button(frame2tab1, text="Save Moving Average Data", command=lambda: self.saveFile("movingaverage", theycoords=self.moving_averages)).grid(row=0, column=1, sticky=NSEW)
-        Button(frame2tab1, text="Save Filtered Low Pass Data",
+        Label(frame2tab1, text="Save Data", anchor='w').grid(row=4, column=0, sticky=NSEW)
+
+        Button(frame2tab1, text="Moving Average", command=lambda: self.saveFile("movingaverage", theycoords=self.moving_averages)).grid(row=5, column=0, sticky=NSEW)
+        Button(frame2tab1, text="Filtered Low Pass",
                command=lambda: self.saveFile(filename="lowpass", theycoords=self.filteredLowPass)).grid(
-            row=1, column=1, sticky=NSEW)
-        Button(frame2tab1, text="Save Filtered High Pass Data",
+            row=6, column=0, sticky=NSEW)
+        Button(frame2tab1, text="Filtered High Pass",
                command=lambda: self.saveFile(filename="highpass", theycoords=self.filteredHighPass)).grid(
-            row=1, column=2, sticky=NSEW)
-        Button(frame2tab1, text="Save Filtered Band Pass Data",
+            row=6, column=1, sticky=NSEW)
+        Button(frame2tab1, text="Filtered Band Pass",
                command=lambda: self.saveFile(filename="bandpass", theycoords=self.filteredBandPass)).grid(
-            row=1, column=3, sticky=NSEW)
+            row=6, column=2, sticky=NSEW)
 
         frame2tab.pack(expand=1, fill=BOTH)
 
@@ -119,6 +122,8 @@ class GUI: # Class to write all code in
         dropdown_menu = OptionMenu(frame3tab1, selected_item, *dropdown_options)
         dropdown_menu.pack()
 
+        ttk.Radiobutton(frame3tab2, text="Option 1", value=False).pack()
+        ttk.Radiobutton(frame3tab2, text="Option 2", value=True).pack()
         frame3tab.pack(expand=1, fill=BOTH)
 
         # Settings
@@ -235,7 +240,6 @@ class GUI: # Class to write all code in
         self.lp = self.ax.plot(self.x_coords, self.filteredLowPass, label="Filtered Low Pass")
         self.hp = self.ax.plot(self.x_coords, self.filteredHighPass, label="Filtered High Pass")
         self.bp = self.ax.plot(self.x_coords, self.filteredBandPass, label="Filtered Band Pass")
-        print(type(self.mvavg))
         self.ax.lines[5].set_visible(self.signal_filtering_on)
         self.ax.lines[4].set_visible(self.signal_filtering_on)
         self.ax.lines[3].set_visible(self.signal_filtering_on)
@@ -325,7 +329,7 @@ class GUI: # Class to write all code in
                         print(filename)
                         lines = [line.strip() for line in f]
                         for i in range(len(lines)):
-                            lines[i] = [float(lines[i].split()[0]), int(lines[i].split()[1])]
+                            lines[i] = [float(lines[i].split()[0]), float(lines[i].split()[1])]
                             print(repr(lines[i]))
 
                         for x, y in lines:
