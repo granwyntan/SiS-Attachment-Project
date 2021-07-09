@@ -335,7 +335,6 @@ class GUI: # Class to write all code in
                         for x, y in lines:
                             self.x_coords.append(x)
                             self.y_coords.append(y)
-
                         self.plotGraph()
                         return
                     else:
