@@ -307,8 +307,15 @@ class GUI: # Class to write all code in
         self.x_coords = self.y_coords = []
         self.ax.clear()
         self.ax.plot(self.x_coords, self.y_coords)
-        self.xslider.config(from_=0, to=100 + 1)
-        self.yslider.config(from_=0, to=100 + 1)
+        # self.xslider.config(from_=0, to=100 + 1)
+        # self.yslider.config(from_=0, to=100 + 1)
+        self.xticks.set(5)
+        self.yticks.set(5)
+        self.xslide['from'] = 1
+        self.xslide['to'] = 100
+
+        self.yslide['from'] = 1
+        self.yslide['to'] = 100
         self.xticks.set(5)
         self.yticks.set(5)
         self.ax.grid()
@@ -322,6 +329,7 @@ class GUI: # Class to write all code in
         self.ax.set_xlim(0, 100)
         self.figure.canvas.draw()
         self.figure.canvas.flush_events()
+
     # Filters
     def movingaverage(self, interval, window_size):
         # np.convolve
@@ -370,8 +378,10 @@ class GUI: # Class to write all code in
                     response = tk.messagebox.askquestion("Open Source File",
                                                          f"Open Source File at Filepath: \"{filename}\"?")  # Alert to check if user wants to open file
                     if response == "yes":
-                        self.x_coords = []
-                        self.y_coords = []
+                        if self.x_coords != [] and self.y_coords != []:
+                            self.clearData()
+                            self.x_coords = []
+                            self.y_coords = []
                         print(filename)
                         lines = [line.strip() for line in f]
                         for i in range(len(lines)):
