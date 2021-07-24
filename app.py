@@ -27,6 +27,19 @@ master: tabControl is the parent widget for the tabs.
 options: The options accepted by the Frame() method are class_, cursor, padding, relief, style, takefocus, height and width. Options are not used in this program.
 '''
 
+class Limiter(ttk.Scale):
+    """ ttk.Scale sublass that limits the precision of values. """
+
+    def __init__(self, *args, **kwargs):
+        self.precision = kwargs.pop('precision')  # Remove non-std kwarg.
+        self.chain = kwargs.pop('command', lambda *a: None)  # Save if present.
+        super(Limiter, self).__init__(*args, command=self._value_changed, **kwargs)
+
+    def _value_changed(self, newvalue):
+        newvalue = int(round(float(newvalue), self.precision))
+        self.winfo_toplevel().globalsetvar(self.cget('variable'), (newvalue))
+        self.chain(newvalue)
+
 class GUI: # Class to write all code in
     def __init__(self):
         self.x_coords = []
@@ -61,10 +74,10 @@ class GUI: # Class to write all code in
         frame1tab = ttk.Notebook(frame1)  # tab controller
         # tab1 = ttk.LabelFrame(tabControl, text="FrameName") can use Label Frame and set text if required
         frame1tab1 = ttk.Frame(frame1tab)  # create
-        frame1tab2 = ttk.Frame(frame1tab)
+        # frame1tab2 = ttk.Frame(frame1tab)
         frame1tab3 = ttk.Frame(frame1tab)
         frame1tab.add(frame1tab1, text='Load Acquired Data')
-        frame1tab.add(frame1tab2, text='Live Acquisition (Anchor)')
+        # frame1tab.add(frame1tab2, text='Live Acquisition (Anchor)')
         frame1tab.add(frame1tab3, text='Settings')
         frame1tab.pack(expand=1, fill=BOTH)
 
@@ -73,18 +86,24 @@ class GUI: # Class to write all code in
         frame2tab1 = ttk.Frame(frame2tab)
         frame2tab2 = ttk.Frame(frame2tab)
         frame2tab3 = ttk.Frame(frame2tab)
-        frame2tab.add(frame2tab1, text='Signal Processing')
-        frame2tab.add(frame2tab2, text='Spectral Decomposition')
-        frame2tab.add(frame2tab3, text='Ratiometric Analysis')
+        frame2tab4 = ttk.Frame(frame2tab)
+        frame2tab5 = ttk.Frame(frame2tab)
+        frame2tab.add(frame2tab1, text='Moving Average')
+        frame2tab.add(frame2tab2, text='Signal Filtering')
+        frame2tab.add(frame2tab3, text='Median Filtering')
+        frame2tab.add(frame2tab4, text='Fast Fourier Transform')
+        frame2tab.add(frame2tab5, text='Smoothing Splines')
+        # frame2tab.add(frame2tab2, text='Spectral Decomposition')
+        # frame2tab.add(frame2tab3, text='Ratiometric Analysis')
 
         self.moving_average_on = False
         self.signal_filtering_on = False
 
-        Label(frame2tab1, text="Filters", anchor='w').grid(row=0, column=0, sticky=NSEW)
-        self.moving_average = Checkbutton(frame2tab1, bd=0, command=self.toggleMovingAverage, text="Moving Average")
+        # Label(frame2tab1, text="Filters", anchor='w').grid(row=0, column=0, sticky=NSEW)
+        self.moving_average = Checkbutton(frame2tab1, command=self.toggleMovingAverage, text="Moving Average", anchor=W)
         self.setMovingAverage(self.moving_average_on)
         self.moving_average.grid(row=1, column=0, sticky=NSEW)
-        self.signal_filtering = Checkbutton(frame2tab1, bd=0, command=self.toggleSignalFiltering, text="Signal Filtering")
+        self.signal_filtering = Checkbutton(frame2tab1, command=self.toggleSignalFiltering, text="Signal Filtering", anchor=W)
         self.setSignalFiltering(self.signal_filtering_on)
         self.signal_filtering.grid(row=2, column=0, sticky=NSEW)
 
@@ -93,57 +112,75 @@ class GUI: # Class to write all code in
         self.filteredHighPass = []
         self.filteredBandPass = []
 
-        Label(frame2tab1, text="Save Data", anchor='w').grid(row=4, column=0, sticky=NSEW)
+        # Label(frame2tab1, text="Save Data", anchor='w').grid(row=4, column=0, sticky=NSEW)
 
-        Button(frame2tab1, text="Moving Average", command=lambda: self.saveFile("movingaverage", theycoords=self.moving_averages)).grid(row=5, column=0, sticky=NSEW)
-        Button(frame2tab1, text="Filtered Low Pass",
+        ttk.Button(frame2tab1, text="Save Moving Average Data", command=lambda: self.saveFile("movingaverage", theycoords=self.moving_averages)).grid(row=5, column=0, sticky=NSEW)
+        ttk.Button(frame2tab2, text="Save Filtered Low Pass",
                command=lambda: self.saveFile(filename="lowpass", theycoords=self.filteredLowPass)).grid(
             row=6, column=0, sticky=NSEW)
-        Button(frame2tab1, text="Filtered High Pass",
+        ttk.Button(frame2tab2, text="Save Filtered High Pass Data",
                command=lambda: self.saveFile(filename="highpass", theycoords=self.filteredHighPass)).grid(
             row=6, column=1, sticky=NSEW)
-        Button(frame2tab1, text="Filtered Band Pass",
+        ttk.Button(frame2tab2, text="Save Filtered Band Pass Data",
                command=lambda: self.saveFile(filename="bandpass", theycoords=self.filteredBandPass)).grid(
             row=6, column=2, sticky=NSEW)
 
         frame2tab.pack(expand=1, fill=BOTH)
 
-        frame3 = Frame(self.window)
-        frame3tab = ttk.Notebook(frame3)  # tab controller
-        frame3tab1 = ttk.Frame(frame3tab)  # create
-        frame3tab2 = ttk.Frame(frame3tab)
-        frame3tab.add(frame3tab1, text='Store')
-        frame3tab.add(frame3tab2, text='Train')
-        selected_item = StringVar(self.window)
-        dropdown_options = ["Option 1",
-                            "Option 2",
-                            "Option 3"]
-        selected_item.set(dropdown_options[0])
-        dropdown_menu = OptionMenu(frame3tab1, selected_item, *dropdown_options)
-        dropdown_menu.pack()
-
-        ttk.Radiobutton(frame3tab2, text="Option 1", value=False).pack()
-        ttk.Radiobutton(frame3tab2, text="Option 2", value=True).pack()
-        frame3tab.pack(expand=1, fill=BOTH)
+        # frame3 = Frame(self.window)
+        # frame3tab = ttk.Notebook(frame3)  # tab controller
+        # frame3tab1 = ttk.Frame(frame3tab)  # create
+        # frame3tab2 = ttk.Frame(frame3tab)
+        # frame3tab.add(frame3tab1, text='Store')
+        # frame3tab.add(frame3tab2, text='Train')
+        # selected_item = StringVar(self.window)
+        # dropdown_options = ["Option 1",
+        #                     "Option 2",
+        #                     "Option 3"]
+        # selected_item.set(dropdown_options[0])
+        # dropdown_menu = OptionMenu(frame3tab1, selected_item, *dropdown_options)
+        # dropdown_menu.pack()
+        #
+        # ttk.Radiobutton(frame3tab2, text="Option 1", value=False).pack()
+        # ttk.Radiobutton(frame3tab2, text="Option 2", value=True).pack()
+        # frame3tab.pack(expand=1, fill=BOTH)
 
         # Settings
-        ttk.Button(frame1tab3, text="Clear Chart", command=self.clearData).pack(side=TOP)
+        ttk.Button(frame1tab3, text="Clear Chart", command=self.clearData).grid(row=0, column=0, columnspan=2)
 
-        self.xticks = IntVar(value=8)
+        self.xticks = IntVar(value=5)
         self.yticks = IntVar(value=5)
 
-        self.yslider = Scale(frame1tab3, from_=1, to=1000, orient=VERTICAL, command=self.updateValue, variable=self.yticks)
+        # self.yslider = ttk.Scale(frame1tab3, from_=1, to=1000, orient=VERTICAL, command=self.updateValue, variable=self.yticks)
         # self.yslider.set(self.yticks.get())
-        self.yslider.pack()
+        # self.yslider.pack()
 
-        self.xslider = Scale(frame1tab3, from_=1, to=1000, orient=HORIZONTAL, command=self.updateValue, variable=self.xticks)
+        # self.xslider = ttk.Scale(frame1tab3, from_=1, to=1000, orient=HORIZONTAL, command=self.updateValue, variable=self.xticks)
         # self.xslider.set(self.xticks)
-        self.xslider.pack()
+        # self.xslider.pack()
 
-        frame1top.place(relx=0, y=0, relwidth=1 / 3, relheight=5/8)
-        frame1.place(relx=0, rely=5/8, relwidth=1/3, relheight=3/8)
-        frame2.place(relx=1/3, y=0, relwidth=1/3, relheight=1)
-        frame3.place(relx=2/3, y=0, relwidth=1/3, relheight=1)
+        self.xspin = tk.Spinbox(frame1tab3, state='readonly', from_=1, to=100, textvariable=self.xticks, width=10, increment=5, command=self.updateValue)
+        self.xslide = Limiter(frame1tab3, variable=self.xticks, orient='horizontal', length=200,
+                        command=self.updateValue, precision=0)
+        self.xslide['to'] = 100
+        self.xslide['from'] = 1
+
+        self.xspin.grid(row=1, column=0, sticky='news')
+        self.xslide.grid(row=1, column=1, sticky='news')
+
+        self.yspin = tk.Spinbox(frame1tab3, state='readonly', from_=1, to=100, textvariable=self.yticks, width=10, increment=5,command=self.updateValue)
+        self.yslide = Limiter(frame1tab3, variable=self.yticks, orient='horizontal', length=200,
+                              command=self.updateValue, precision=0)
+        self.yslide['to'] = 100
+        self.yslide['from'] = 1
+
+        self.yspin.grid(row=2, column=0, sticky='news')
+        self.yslide.grid(row=2, column=1, sticky='news')
+
+        frame1top.place(relx=0, y=0, relwidth=1/2, relheight=5/8)
+        frame1.place(relx=0, rely=5/8, relwidth=1/2, relheight=3/8)
+        frame2.place(relx=1/2, y=0, relwidth=1/2, relheight=1)
+        # frame3.place(relx=2/3, y=0, relwidth=1/3, relheight=1)
 
         self.gridOn = BooleanVar(value=True)
         self.axesOn = StringVar(value='on')
@@ -170,10 +207,10 @@ class GUI: # Class to write all code in
 
     def toggleMovingAverage(self):
         if self.moving_average_on:
-            self.moving_average.config(fg="red")
+            self.moving_average.config(foreground="red")
             self.moving_average_on = False
         else:
-            self.moving_average.config(fg="green")
+            self.moving_average.config(foreground="green")
             self.moving_average_on = True
         if len(self.ax.lines) > 2:
             self.ax.lines[2].set_visible(self.moving_average_on)
@@ -183,16 +220,16 @@ class GUI: # Class to write all code in
 
     def setMovingAverage(self, value):
         if not value:
-            self.moving_average.config(fg="red")
+            self.moving_average.config(foreground="red")
         else:
-            self.moving_average.config(fg="green")
+            self.moving_average.config(foreground="green")
 
     def toggleSignalFiltering(self):
         if self.signal_filtering_on:
-            self.signal_filtering.config(fg="red")
+            self.signal_filtering.config(foreground="red")
             self.signal_filtering_on = False
         else:
-            self.signal_filtering.config(fg="green")
+            self.signal_filtering.config(foreground="green")
             self.signal_filtering_on = True
         if len(self.ax.lines) > 2:
             self.ax.lines[5].set_visible(self.signal_filtering_on)
@@ -208,7 +245,9 @@ class GUI: # Class to write all code in
         else:
             self.signal_filtering.config(fg="green")
 
-    def updateValue(self, event):
+    def updateValue(self, *args):
+        print(self.xspin.get())
+        print(self.xslide.get())
         if self.x_coords != [] and self.y_coords != []:
             self.ax.set_xticks(np.arange(min(self.x_coords), max(self.x_coords) + 1, self.xticks.get()))
             self.ax.set_yticks(np.arange(min(self.y_coords), max(self.y_coords) + 1, self.yticks.get()))
@@ -232,7 +271,7 @@ class GUI: # Class to write all code in
         # if self.x_coords and self.y_coords:
         self.ax.scatter(self.x_coords, self.y_coords, label="Data Points", color="lightcoral")
         self.ax.plot(self.x_coords, self.y_coords, label='Line', color="royalblue")
-        self.xticks.set((max(self.x_coords) - min(self.x_coords)) / 12.5)
+        self.xticks.set((max(self.x_coords) - min(self.x_coords)) / 20)
         self.yticks.set((max(self.y_coords) - min(self.y_coords)) / 20)
         self.moving_averages = self.movingaverage(self.y_coords, 4)
         self.signalFiltering(self.y_coords)
@@ -246,8 +285,15 @@ class GUI: # Class to write all code in
         self.ax.lines[2].set_visible(self.moving_average_on)
         self.median_filtered_data = scipy.signal.medfilt(self.y_coords, kernel_size=7)
         self.ax.plot(self.x_coords, self.median_filtered_data, label="Median Filtered Data")
-        self.xslider.config(from_=self.xticks.get(), to=(max(self.x_coords) - min(self.x_coords)))
-        self.yslider.config(from_=self.yticks.get(), to=(max(self.y_coords) - min(self.y_coords)))
+        # self.xslider.config(from_=self.xticks.get(), to=(max(self.x_coords) - min(self.x_coords)))
+        # self.yslider.config(from_=self.yticks.get(), to=(max(self.y_coords) - min(self.y_coords)))
+
+        self.xslide['from'] = int(self.xticks.get())
+        self.xslide['to'] = int(max(self.x_coords) - min(self.x_coords))
+
+        self.yslide['from'] = int(self.yticks.get())
+        self.yslide['to'] = int(max(self.y_coords) - min(self.y_coords))
+
         # self.ax.plt.gca()
         self.updateValue(self)
         self.ax.legend()
@@ -263,7 +309,7 @@ class GUI: # Class to write all code in
         self.ax.plot(self.x_coords, self.y_coords)
         self.xslider.config(from_=0, to=100 + 1)
         self.yslider.config(from_=0, to=100 + 1)
-        self.xticks.set(8)
+        self.xticks.set(5)
         self.yticks.set(5)
         self.ax.grid()
         self.ax.set_xlabel("Wavelength (nm)")
@@ -273,7 +319,7 @@ class GUI: # Class to write all code in
         self.ax.relim()
         self.ax.autoscale()
         self.ax.set_ylim(0, 100)
-        self.ax.set_xlim(0, 96)
+        self.ax.set_xlim(0, 100)
         self.figure.canvas.draw()
         self.figure.canvas.flush_events()
     # Filters
