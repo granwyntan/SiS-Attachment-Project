@@ -191,7 +191,8 @@ class GUI: # Class to write all code in
 
         self.updateValue(self)
 
-        ttk.Button(frame1tab1, text="Open Files", command=self.openFile).pack(side=TOP)
+        ttk.Button(frame1tab1, text="Select Flourescence Data", command=self.openFile).pack(side=TOP)
+        ttk.Button(frame1tab1, text="Select Background Data", command=self.openBackgroundFile).pack(side=TOP)
 
         # Key Bindings
         self.window.bind("f", self.toggleFullScreen)
@@ -270,7 +271,7 @@ class GUI: # Class to write all code in
     def plotGraph(self):
         # if self.x_coords and self.y_coords:
         self.ax.scatter(self.x_coords, self.y_coords, label="Data Points", color="lightcoral")
-        self.ax.plot(self.x_coords, self.y_coords, label='Line', color="royalblue")
+        self.ax.plot(self.x_coords, self.y_coords, label='Flourescence Data', color="royalblue")
         self.xticks.set((max(self.x_coords) - min(self.x_coords)) / 20)
         self.yticks.set((max(self.y_coords) - min(self.y_coords)) / 20)
         self.moving_averages = self.movingaverage(self.y_coords, 4)
@@ -365,6 +366,10 @@ class GUI: # Class to write all code in
 
 
     # Opening File Functionality
+    def openBackgroundFile(self):
+        # TODO: Background File Functionality and processing
+        pass
+
     def openFile(self):
         filename = filedialog.askopenfilename(initialdir="",
                                               title="Open Acquired Spectral Data File",
