@@ -329,7 +329,7 @@ class GUI:  # Class to write all code in
         self.bandPassFiltering(self.y_coords)
         self.medianFiltering(self.y_coords)
         self.fastFourierData = self.fastFourierTransform(self.y_coords)
-        print(self.fastFourierData)
+        # print(self.fastFourierData)
         self.mvavg = self.ax.plot(self.x_coords, self.moving_averages, label="Moving Average")
         self.lp = self.ax.plot(self.x_coords, self.filteredLowPass, label="Filtered Low Pass")
         self.hp = self.ax.plot(self.x_coords, self.filteredHighPass, label="Filtered High Pass")
@@ -416,29 +416,8 @@ class GUI:  # Class to write all code in
     def medianFiltering(self, data):
         self.medianFilteredData = scipy.signal.medfilt(data, kernel_size=7)
 
-    # def discreteFourierTransform(self, data):
-    #     x = np.asarray(data, dtype=float)
-    #     N = x.shape[0]
-    #     n = np.arange(N)
-    #     k = n.reshape((N, 1))
-    #     M = np.exp(-2j * np.pi * k * n / N)
-    #     return np.dot(M, x)
-    #
-    # def fastFourierTransform(self, data):
-    #     x = np.asarray(data, dtype=float)
-    #     N = x.shape[0]
-    #     if N % 2 > 0:
-    #         raise ValueError("must be a power of 2")
-    #     elif N <= 2:
-    #         return self.discreteFourierTransform(x)
-    #     else:
-    #         X_even = self.fastFourierTransform(x[::2])
-    #         X_odd = self.fastFourierTransform(x[1::2])
-    #         terms = np.exp(-2j * np.pi * np.arange(N) / N)
-    #         return np.concatenate([X_even + terms[:int(N / 2)] * X_odd,
-    #                                X_even + terms[int(N / 2):] * X_odd])
-    def discreteFourierTransform(self, x):
-        x = np.asarray(x, dtype=float)
+    def discreteFourierTransform(self, data):
+        x = np.asarray(data, dtype=float)
         N = x.shape[0]
         n = np.arange(N)
         k = n.reshape((N, 1))
@@ -446,20 +425,20 @@ class GUI:  # Class to write all code in
         return np.dot(M, x)
 
     def fastFourierTransform(self, data):
-        # X = np.asarray(x, dtype=float)
-        return np.real(scipy.fft.fft(np.array(data)))
-        # x = np.asarray(x, dtype=float)
-        # N = x.shape[0]
-        # if N % 2 > 0:
-        #     raise ValueError("must be a power of 2")
-        # elif N <= 2:
-        #     return self.discreteFourierTransform(x)
-        # else:
-        #     X_even = self.fastFourierTransform(x[::2])
-        #     X_odd = self.fastFourierTransform(x[1::2])
-        #     terms = np.exp(-2j * np.pi * np.arange(N) / N)
-        #     return np.concatenate([X_even + terms[:int(N / 2)] * X_odd,
-        #                            X_even + terms[int(N / 2):] * X_odd])
+        # Can also use this: return np.real(scipy.fft.fft(np.array(data)))
+        x = np.asarray(data, dtype=float)
+        N = x.shape[0]
+        if N % 2 > 0:
+            raise ValueError("must be a power of 2")
+        elif N <= 2:
+            return np.real(self.discreteFourierTransform(x))
+        else:
+            X_even = self.fastFourierTransform(x[::2])
+            X_odd = self.fastFourierTransform(x[1::2])
+            terms = np.exp(-2j * np.pi * np.arange(N) / N)
+            return np.real(np.concatenate([X_even + terms[:int(N / 2)] * X_odd,
+                                   X_even + terms[int(N / 2):] * X_odd]))
+
     # Saving File Functionality
     def saveFile(self, filename, theycoords):
         if self.x_coords and self.y_coords:
