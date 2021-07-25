@@ -219,11 +219,13 @@ class GUI:  # Class to write all code in
         # frame3.place(relx=2/3, y=0, relwidth=1/3, relheight=1)
 
         self.gridOn = BooleanVar(value=True)
-        self.axesOn = StringVar(value='on')
+        self.axesOn = BooleanVar(value=True)
         # TODO: Setting to turn grid on and off
+        ttk.Checkbutton(frame1tab3, command=self.toggleGrid, text="Grid",
+                        variable=self.gridOn).grid(row=3, column=0, sticky=NSEW)
         # TODO: Setting to turn axes and labels on and off
-        # plt.grid(False)
-        # plt.axis('off')
+        ttk.Checkbutton(frame1tab3, command=self.toggleAxes, text="Axes",
+                        variable=self.axesOn).grid(row=4, column=0, sticky=NSEW)
 
         self.updateValue(self)
 
@@ -241,6 +243,12 @@ class GUI:  # Class to write all code in
 
         # Main Loop
         self.window.mainloop()
+
+    def toggleAxes(self):
+        self.ax.axis(self.axesOn.get())
+
+    def toggleGrid(self):
+        self.ax.grid(None)
 
     def toggleMovingAverage(self):
         # if self.moving_average_on:
