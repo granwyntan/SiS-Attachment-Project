@@ -4,8 +4,6 @@ from tkinter import filedialog
 from tkinter import ttk
 import pandas as pd
 import numpy as np
-from sympy import fft
-import timeit
 import matplotlib.pyplot as plt
 import matplotlib.animation as animation
 from matplotlib import style
@@ -29,6 +27,7 @@ master: tabControl is the parent widget for the tabs.
 options: The options accepted by the Frame() method are class_, cursor, padding, relief, style, takefocus, height and width. Options are not used in this program.
 '''
 
+
 class Limiter(ttk.Scale):
     """ ttk.Scale sublass that limits the precision of values. """
 
@@ -42,16 +41,18 @@ class Limiter(ttk.Scale):
         self.winfo_toplevel().globalsetvar(self.cget('variable'), (newvalue))
         self.chain(newvalue)
 
-class GUI: # Class to write all code in
+
+class GUI:  # Class to write all code in
     def __init__(self):
         self.x_coords = []
         self.y_coords = []
 
-        self.window = tk.Tk() # Window
-        self.window.title("Flourospectroscopy") # Set title
-        self.fullScreen = False # Variable to track if fullscreen
-        self.window.attributes("-fullscreen", self.fullScreen) # Set fullscreen
-        self.window.geometry(f"{self.window.winfo_screenwidth()}x{self.window.winfo_screenheight()}") # make window fill entire screen
+        self.window = tk.Tk()  # Window
+        self.window.title("Flourospectroscopy")  # Set title
+        self.fullScreen = False  # Variable to track if fullscreen
+        self.window.attributes("-fullscreen", self.fullScreen)  # Set fullscreen
+        self.window.geometry(
+            f"{self.window.winfo_screenwidth()}x{self.window.winfo_screenheight()}")  # make window fill entire screen
 
         frame1top = Frame(self.window)
         frame1 = Frame(self.window)
@@ -98,33 +99,64 @@ class GUI: # Class to write all code in
         # frame2tab.add(frame2tab2, text='Spectral Decomposition')
         # frame2tab.add(frame2tab3, text='Ratiometric Analysis')
 
-        self.moving_average_on = False
-        self.signal_filtering_on = False
+        self.moving_average_on = BooleanVar()
+        self.moving_average_on.set(False)
+
+        self.low_pass_on = BooleanVar()
+        self.low_pass_on.set(False)
+        self.high_pass_on = BooleanVar()
+        self.high_pass_on.set(False)
+        self.band_pass_on = BooleanVar()
+        self.band_pass_on.set(False)
+
+        self.median_on = BooleanVar()
+        self.median_on.set(False)
+
+        self.fft_on = BooleanVar()
+        self.fft_on.set(False)
 
         # Label(frame2tab1, text="Filters", anchor='w').grid(row=0, column=0, sticky=NSEW)
-        self.moving_average = Checkbutton(frame2tab1, command=self.toggleMovingAverage, text="Moving Average", anchor=W)
-        self.setMovingAverage(self.moving_average_on)
-        self.moving_average.grid(row=1, column=0, sticky=NSEW)
-        self.signal_filtering = Checkbutton(frame2tab1, command=self.toggleSignalFiltering, text="Signal Filtering", anchor=W)
-        self.setSignalFiltering(self.signal_filtering_on)
-        self.signal_filtering.grid(row=2, column=0, sticky=NSEW)
+        self.moving_average = ttk.Checkbutton(frame2tab1, command=self.toggleMovingAverage, text="Moving Average",
+                                              variable=self.moving_average_on)
+        self.moving_average.grid(row=0, column=0, sticky=NSEW)
+
+        self.low_pass = ttk.Checkbutton(frame2tab2, command=self.toggleLowPassFiltering, text="Low Pass Filtering",
+                                        variable=self.low_pass_on)
+        self.low_pass.grid(row=0, column=0, sticky=NSEW)
+        self.high_pass = ttk.Checkbutton(frame2tab2, command=self.toggleHighPassFiltering, text="High Pass Filtering",
+                                         variable=self.high_pass_on)
+        self.high_pass.grid(row=1, column=0, sticky=NSEW)
+        self.band_pass = ttk.Checkbutton(frame2tab2, command=self.toggleBandPassFiltering, text="Band Pass Filtering",
+                                         variable=self.band_pass_on)
+        self.band_pass.grid(row=2, column=0, sticky=NSEW)
+        self.median = ttk.Checkbutton(frame2tab3, command=self.toggleMedianFiltering, text="Median Filtering",
+                                      variable=self.median_on)
+        self.median.grid(row=0, column=0, sticky=NSEW)
+        self.fft = ttk.Checkbutton(frame2tab4, command=self.toggleFastFourierTransform, text="Fast Fourier Transform",
+                                   variable=self.fft_on)
+        self.fft.grid(row=0, column=0, sticky=NSEW)
 
         self.moving_averages = []
         self.filteredLowPass = []
         self.filteredHighPass = []
         self.filteredBandPass = []
+        self.medianFilteredData = []
+        self.fastFourierData = []
 
         # Label(frame2tab1, text="Save Data", anchor='w').grid(row=4, column=0, sticky=NSEW)
 
-        ttk.Button(frame2tab1, text="Save Moving Average Data", command=lambda: self.saveFile("movingaverage", theycoords=self.moving_averages)).grid(row=5, column=0, sticky=NSEW)
+        ttk.Button(frame2tab1, text="Save Moving Average Data",
+                   command=lambda: self.saveFile("movingaverage", theycoords=self.moving_averages)).grid(row=5,
+                                                                                                         column=0,
+                                                                                                         sticky=NSEW)
         ttk.Button(frame2tab2, text="Save Filtered Low Pass",
-               command=lambda: self.saveFile(filename="lowpass", theycoords=self.filteredLowPass)).grid(
+                   command=lambda: self.saveFile(filename="lowpass", theycoords=self.filteredLowPass)).grid(
             row=6, column=0, sticky=NSEW)
         ttk.Button(frame2tab2, text="Save Filtered High Pass Data",
-               command=lambda: self.saveFile(filename="highpass", theycoords=self.filteredHighPass)).grid(
+                   command=lambda: self.saveFile(filename="highpass", theycoords=self.filteredHighPass)).grid(
             row=6, column=1, sticky=NSEW)
         ttk.Button(frame2tab2, text="Save Filtered Band Pass Data",
-               command=lambda: self.saveFile(filename="bandpass", theycoords=self.filteredBandPass)).grid(
+                   command=lambda: self.saveFile(filename="bandpass", theycoords=self.filteredBandPass)).grid(
             row=6, column=2, sticky=NSEW)
 
         frame2tab.pack(expand=1, fill=BOTH)
@@ -148,7 +180,7 @@ class GUI: # Class to write all code in
         # frame3tab.pack(expand=1, fill=BOTH)
 
         # Settings
-        ttk.Button(frame1tab3, text="Clear Chart", command=self.clearData).grid(row=0, column=0, columnspan=2)
+        ttk.Button(frame1tab3, text="Clear Chart", command=self.clearData).grid(row=0, column=0, sticky=W)
 
         self.xticks = IntVar(value=5)
         self.yticks = IntVar(value=5)
@@ -161,16 +193,18 @@ class GUI: # Class to write all code in
         # self.xslider.set(self.xticks)
         # self.xslider.pack()
 
-        self.xspin = tk.Spinbox(frame1tab3, state='readonly', from_=1, to=100, textvariable=self.xticks, width=10, increment=5, command=self.updateValue)
+        self.xspin = tk.Spinbox(frame1tab3, state='readonly', from_=1, to=100, textvariable=self.xticks, width=10,
+                                increment=5, command=self.updateValue)
         self.xslide = Limiter(frame1tab3, variable=self.xticks, orient='horizontal', length=200,
-                        command=self.updateValue, precision=0)
+                              command=self.updateValue, precision=0)
         self.xslide['to'] = 100
         self.xslide['from'] = 1
 
         self.xspin.grid(row=1, column=0, sticky='news')
         self.xslide.grid(row=1, column=1, sticky='news')
 
-        self.yspin = tk.Spinbox(frame1tab3, state='readonly', from_=1, to=100, textvariable=self.yticks, width=10, increment=5,command=self.updateValue)
+        self.yspin = tk.Spinbox(frame1tab3, state='readonly', from_=1, to=100, textvariable=self.yticks, width=10,
+                                increment=5, command=self.updateValue)
         self.yslide = Limiter(frame1tab3, variable=self.yticks, orient='horizontal', length=200,
                               command=self.updateValue, precision=0)
         self.yslide['to'] = 100
@@ -179,21 +213,24 @@ class GUI: # Class to write all code in
         self.yspin.grid(row=2, column=0, sticky='news')
         self.yslide.grid(row=2, column=1, sticky='news')
 
-        frame1top.place(relx=0, y=0, relwidth=1/2, relheight=5/8)
-        frame1.place(relx=0, rely=5/8, relwidth=1/2, relheight=3/8)
-        frame2.place(relx=1/2, y=0, relwidth=1/2, relheight=1)
+        frame1top.place(relx=0, y=0, relwidth=1 / 2, relheight=5 / 8)
+        frame1.place(relx=0, rely=5 / 8, relwidth=1 / 2, relheight=3 / 8)
+        frame2.place(relx=1 / 2, y=0, relwidth=1 / 2, relheight=1)
         # frame3.place(relx=2/3, y=0, relwidth=1/3, relheight=1)
 
         self.gridOn = BooleanVar(value=True)
-        self.axesOn = StringVar(value='on')
+        self.axesOn = BooleanVar(value=True)
         # TODO: Setting to turn grid on and off
+        ttk.Checkbutton(frame1tab3, command=self.toggleGrid, text="Grid",
+                        variable=self.gridOn).grid(row=3, column=0, sticky=NSEW)
         # TODO: Setting to turn axes and labels on and off
-        # plt.grid(False)
-        # plt.axis('off')
+        ttk.Checkbutton(frame1tab3, command=self.toggleAxes, text="Axes",
+                        variable=self.axesOn).grid(row=4, column=0, sticky=NSEW)
 
         self.updateValue(self)
 
-        ttk.Button(frame1tab1, text="Open Files", command=self.openFile).pack(side=TOP)
+        ttk.Button(frame1tab1, text="Select Flourescence Data", command=self.openFile).pack(side=TOP)
+        ttk.Button(frame1tab1, text="Select Background Data", command=self.openBackgroundFile).pack(side=TOP)
 
         # Key Bindings
         self.window.bind("f", self.toggleFullScreen)
@@ -207,45 +244,64 @@ class GUI: # Class to write all code in
         # Main Loop
         self.window.mainloop()
 
+    def toggleAxes(self):
+        self.ax.axis(self.axesOn.get())
+
+    def toggleGrid(self):
+        self.ax.grid(None)
+
     def toggleMovingAverage(self):
-        if self.moving_average_on:
-            self.moving_average.config(foreground="red")
-            self.moving_average_on = False
-        else:
-            self.moving_average.config(foreground="green")
-            self.moving_average_on = True
+        # if self.moving_average_on:
+        #     # self.moving_average.config(foreground="red")
+        #     self.moving_average_on = False
+        # else:
+        #     # self.moving_average.config(foreground="green")
+        #     self.moving_average_on = True
         if len(self.ax.lines) > 2:
-            self.ax.lines[2].set_visible(self.moving_average_on)
-        self.ax.legend()
+            self.ax.lines[2].set_visible(self.moving_average_on.get())
+        self.filterCheck()
+
+    # def setMovingAverage(self, value):
+    #     if not value:
+    #         self.moving_average.config(foreground="red")
+    #     else:
+    #         self.moving_average.config(foreground="green")
+    def toggleLowPassFiltering(self):
+        if len(self.ax.lines) > 2:
+            self.ax.lines[3].set_visible(self.low_pass_on.get())
+        self.filterCheck()
+
+    def toggleHighPassFiltering(self):
+        if len(self.ax.lines) > 2:
+            self.ax.lines[4].set_visible(self.high_pass_on.get())
+        self.filterCheck()
+
+    def toggleBandPassFiltering(self):
+        if len(self.ax.lines) > 2:
+            self.ax.lines[5].set_visible(self.band_pass_on.get())
+        self.filterCheck()
+
+    def toggleMedianFiltering(self):
+        if len(self.ax.lines) > 2:
+            self.ax.lines[6].set_visible(self.median_on.get())
+        self.filterCheck()
+
+    def toggleFastFourierTransform(self):
+        if len(self.ax.lines) > 2:
+            self.ax.lines[7].set_visible(self.fft_on.get())
+        self.filterCheck()
+
+    def filterCheck(self):
+        if self.x_coords and self.y_coords:
+            self.ax.legend()
         self.figure.canvas.draw()
         self.figure.canvas.flush_events()
 
-    def setMovingAverage(self, value):
-        if not value:
-            self.moving_average.config(foreground="red")
-        else:
-            self.moving_average.config(foreground="green")
-
-    def toggleSignalFiltering(self):
-        if self.signal_filtering_on:
-            self.signal_filtering.config(foreground="red")
-            self.signal_filtering_on = False
-        else:
-            self.signal_filtering.config(foreground="green")
-            self.signal_filtering_on = True
-        if len(self.ax.lines) > 2:
-            self.ax.lines[5].set_visible(self.signal_filtering_on)
-            self.ax.lines[4].set_visible(self.signal_filtering_on)
-            self.ax.lines[3].set_visible(self.signal_filtering_on)
-        self.ax.legend()
-        self.figure.canvas.draw()
-        self.figure.canvas.flush_events()
-
-    def setSignalFiltering(self, value):
-        if not value:
-            self.signal_filtering.config(fg="red")
-        else:
-            self.signal_filtering.config(fg="green")
+    # def setSignalFiltering(self, value):
+    #     if not value:
+    #         self.signal_filtering.config(fg="red")
+    #     else:
+    #         self.signal_filtering.config(fg="green")
 
     def updateValue(self, *args):
         print(self.xspin.get())
@@ -272,21 +328,29 @@ class GUI: # Class to write all code in
     def plotGraph(self):
         # if self.x_coords and self.y_coords:
         self.ax.scatter(self.x_coords, self.y_coords, label="Data Points", color="lightcoral")
-        self.ax.plot(self.x_coords, self.y_coords, label='Line', color="royalblue")
-        self.xticks.set((max(self.x_coords) - min(self.x_coords)) / 20)
-        self.yticks.set((max(self.y_coords) - min(self.y_coords)) / 20)
+        self.ax.plot(self.x_coords, self.y_coords, label='Flourescence Data', color="royalblue")
+        self.xticks.set(int((max(self.x_coords) - min(self.x_coords)) / 20))
+        self.yticks.set(int((max(self.y_coords) - min(self.y_coords)) / 20))
         self.moving_averages = self.movingaverage(self.y_coords, 4)
-        self.signalFiltering(self.y_coords)
+        self.lowPassFiltering(self.y_coords)
+        self.highPassFiltering(self.y_coords)
+        self.bandPassFiltering(self.y_coords)
+        self.medianFiltering(self.y_coords)
+        self.fastFourierData = self.fastFourierTransform(self.y_coords)
+        # print(self.fastFourierData)
         self.mvavg = self.ax.plot(self.x_coords, self.moving_averages, label="Moving Average")
         self.lp = self.ax.plot(self.x_coords, self.filteredLowPass, label="Filtered Low Pass")
         self.hp = self.ax.plot(self.x_coords, self.filteredHighPass, label="Filtered High Pass")
         self.bp = self.ax.plot(self.x_coords, self.filteredBandPass, label="Filtered Band Pass")
-        self.ax.lines[5].set_visible(self.signal_filtering_on)
-        self.ax.lines[4].set_visible(self.signal_filtering_on)
-        self.ax.lines[3].set_visible(self.signal_filtering_on)
-        self.ax.lines[2].set_visible(self.moving_average_on)
-        self.median_filtered_data = scipy.signal.medfilt(self.y_coords, kernel_size=7)
-        self.ax.plot(self.x_coords, self.median_filtered_data, label="Median Filtered Data")
+        self.md = self.ax.plot(self.x_coords, self.medianFilteredData, label="Median Filtered")
+        self.fft = self.ax.plot(self.x_coords, self.fastFourierData, label="Fast Fourier Transform")
+        # TODO: Smoothing Splines
+        self.ax.lines[7].set_visible(self.fft_on.get())
+        self.ax.lines[6].set_visible(self.median_on.get())
+        self.ax.lines[5].set_visible(self.band_pass_on.get())
+        self.ax.lines[4].set_visible(self.high_pass_on.get())
+        self.ax.lines[3].set_visible(self.low_pass_on.get())
+        self.ax.lines[2].set_visible(self.moving_average_on.get())
         # self.xslider.config(from_=self.xticks.get(), to=(max(self.x_coords) - min(self.x_coords)))
         # self.yslider.config(from_=self.yticks.get(), to=(max(self.y_coords) - min(self.y_coords)))
 
@@ -301,6 +365,8 @@ class GUI: # Class to write all code in
         self.ax.legend()
         self.ax.relim()
         self.ax.autoscale()
+        self.ax.set_xlim(min(self.x_coords)-self.xticks.get(), max(self.x_coords)+self.xticks.get())
+        self.ax.set_ylim(min(self.y_coords)-self.yticks.get(), max(self.y_coords)+self.yticks.get())
         plt.tight_layout()
         self.figure.canvas.draw()
         self.figure.canvas.flush_events()
@@ -343,102 +409,74 @@ class GUI: # Class to write all code in
         # ret[window_size:] = ret[window_size:] - ret[:-window_size]
         # return ret[window_size - 1:] / window_size
 
-    def signalFiltering(self, data):
+    def lowPassFiltering(self, data):
         b, a = scipy.signal.butter(3, 0.05, 'lowpass')
         self.filteredLowPass = scipy.signal.filtfilt(b, a, data)
 
+    def highPassFiltering(self, data):
         b, a = scipy.signal.butter(3, 0.05, 'highpass')
         self.filteredHighPass = scipy.signal.filtfilt(b, a, data)
 
+    def bandPassFiltering(self, data):
         b, a = scipy.signal.butter(3, [.01, .05], 'band')
         self.filteredBandPass = scipy.signal.lfilter(b, a, data)
 
+    def medianFiltering(self, data):
+        self.medianFilteredData = scipy.signal.medfilt(data, kernel_size=7)
 
-    def Discrete_Fourier_Transform(x):
-        x = np.asarray(x, dtype=float)
+    def discreteFourierTransform(self, data):
+        x = np.asarray(data, dtype=float)
         N = x.shape[0]
         n = np.arange(N)
         k = n.reshape((N, 1))
         M = np.exp(-2j * np.pi * k * n / N)
         return np.dot(M, x)
-        x = np.random.random(1024)
-        np.allclose(Discrete_Fourier_Transform(x), np.fft.fft(x))
-        timeit.Discrete_Fourier_Transform(x)
-        timeit.np.fft.fft(x)
 
-    def Fast_Fourier_Transform(x):
-        """A recursive implementation of the 1D Cooley-Tukey FFT"""
-        x = np.asarray(x, dtype=float)
+    def fastFourierTransform(self, data):
+        # Can also use this: return np.real(scipy.fft.fft(np.array(data)))
+        x = np.asarray(data, dtype=float)
         N = x.shape[0]
-
         if N % 2 > 0:
-            raise ValueError("size of x must be a power of 2")
-        elif N <= 32:  # this cutoff should be optimized
-            return Discrete_Fourier_Transform(x)
+            raise ValueError("must be a power of 2")
+        elif N <= 2:
+            return np.real(self.discreteFourierTransform(x))
         else:
-            X_even = Fast_Fourier_Transform(x[::2])
-            X_odd = Fast_Fourier_Transform(x[1::2])
-            factor = np.exp(-2j * np.pi * np.arange(N) / N)
-            return np.concatenate([X_even + factor[:N / 2] * X_odd,
-                                   X_even + factor[N / 2:] * X_odd])
-        x = np.random.random(1024)
-        np.allclose(Fast_Fourier_Transform(x), np.fft.fft(x))
-        timeit.Discrete_Fourier_Transform(x)
-        timeit.Fast_Fourier_Transform(x)
-        timeit.np.fft.fft(x)
-
-    def FFT_vectorized(x):
-        """A vectorized, non-recursive version of the Cooley-Tukey FFT"""
-        x = np.asarray(x, dtype=float)
-        N = x.shape[0]
-
-        if np.log2(N) % 1 > 0:
-            raise ValueError("size of x must be a power of 2")
-
-        # N_min here is equivalent to the stopping condition above,
-        # and should be a power of 2
-        N_min = min(N, 32)
-
-        # Perform an O[N^2] DFT on all length-N_min sub-problems at once
-        n = np.arange(N_min)
-        k = n[:, None]
-        M = np.exp(-2j * np.pi * n * k / N_min)
-        X = np.dot(M, x.reshape((N_min, -1)))
-
-        # build-up each level of the recursive calculation all at once
-        while X.shape[0] < N:
-            X_even = X[:, :X.shape[1] / 2]
-            X_odd = X[:, X.shape[1] / 2:]
-            factor = np.exp(-1j * np.pi * np.arange(X.shape[0])
-                            / X.shape[0])[:, None]
-            X = np.vstack([X_even + factor * X_odd,
-                           X_even - factor * X_odd])
-
-        return X.ravel()
+            X_even = self.fastFourierTransform(x[::2])
+            X_odd = self.fastFourierTransform(x[1::2])
+            terms = np.exp(-2j * np.pi * np.arange(N) / N)
+            return np.real(np.concatenate([X_even + terms[:int(N / 2)] * X_odd,
+                                   X_even + terms[int(N / 2):] * X_odd]))
 
     # Saving File Functionality
     def saveFile(self, filename, theycoords):
         if self.x_coords and self.y_coords:
-            f = filedialog.asksaveasfile(initialfile=f'{filename}.txt', defaultextension=".txt", filetypes=[("Text Documents", "*.txt"), ("All Files", "*.*")])
-            data = ""
-            for i in range(len(self.x_coords)):
-                data += f"{self.x_coords[i]} {theycoords[i]}\n"
-            f.write(data)
-            f.close()
+            try:
+                f = filedialog.asksaveasfile(initialfile=f'{filename}.txt', defaultextension=".txt",
+                                             filetypes=[("Text Documents", "*.txt"), ("All Files", "*.*")])
+                data = ""
+                for i in range(len(self.x_coords)):
+                    data += f"{self.x_coords[i]} {theycoords[i]}\n"
+                f.write(data)
+                f.close()
+            except:
+                return
         else:
             tk.messagebox.showinfo("Save to File", "No Data Loaded")
 
-
     # Opening File Functionality
+    def openBackgroundFile(self):
+        # TODO: Background File Functionality and processing
+        pass
+
     def openFile(self):
         filename = filedialog.askopenfilename(initialdir="",
                                               title="Open Acquired Spectral Data File",
                                               filetypes=(("ASCII Files", "*.asc"),
                                                          ("Text Files", "*.txt"),
                                                          ("All Files", "*.*")))
-                    # Configuring File dialog and varipus file types
+        # Configuring File dialog and varipus file types
         if filename:  # If File Chosen
-            try:
+            # try:
                 with open(filename, 'r') as f:  # Open File
                     response = tk.messagebox.askquestion("Open Source File",
                                                          f"Open Source File at Filepath: \"{filename}\"?")  # Alert to check if user wants to open file
@@ -460,18 +498,20 @@ class GUI: # Class to write all code in
                         return
                     else:
                         return
-            except Exception as e:  # If unable to open file
-                print(e)
-                tk.messagebox.showerror("Open Source File", f"An unknown error occurred when reading \"{filename}\"")  # Error
                 return
+            # except Exception as e:  # If unable to open file
+            #     print(e)
+            #     tk.messagebox.showerror("Open Source File",
+            #                             f"An unknown error occurred when reading \"{filename}\"")  # Error
+            #     return
         else:
             tk.messagebox.showwarning("Open Source File", "No File Opened")  # Warning
             return
 
-
     def _quit(self):
         self.window.quit()
         self.window.destroy()
+
 
 if __name__ == '__main__':
     app = GUI()
