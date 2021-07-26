@@ -432,6 +432,20 @@ class GUI:  # Class to write all code in
         M = np.exp(-2j * np.pi * k * n / N)
         return np.dot(M, x)
 
+    def inverseFourierTransform(self,data):
+      # frequency
+      t = np.arange(self.x_coords)
+
+      # Create a sine wave with multiple frequencies(1 Hz, 2 Hz and 4 Hz)
+      a = np.sin(2 * np.pi * t) + np.sin(2 * 2 * np.pi * t) + np.sin(4 * 2 * np.pi * t)
+
+      # Do a Fourier transform on the signal
+      tx = np.fft.fft(a)
+
+      # Do an inverse Fourier transform on the signal
+      itx = np.fft.ifft(tx)
+
+
     def fastFourierTransform(self, data):
         return
         # TODO: We need to make this work properly
