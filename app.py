@@ -433,19 +433,21 @@ class GUI:  # Class to write all code in
         return np.dot(M, x)
 
     def fastFourierTransform(self, data):
+        return
+        # TODO: We need to make this work properly
         # Can also use this: return np.real(scipy.fft.fft(np.array(data)))
-        x = np.asarray(data, dtype=float)
-        N = x.shape[0]
-        if N % 2 > 0:
-            raise ValueError("must be a power of 2")
-        elif N <= 2:
-            return np.real(self.discreteFourierTransform(x))
-        else:
-            X_even = self.fastFourierTransform(x[::2])
-            X_odd = self.fastFourierTransform(x[1::2])
-            terms = np.exp(-2j * np.pi * np.arange(N) / N)
-            return np.real(np.concatenate([X_even + terms[:int(N / 2)] * X_odd,
-                                   X_even + terms[int(N / 2):] * X_odd]))
+        # x = np.asarray(data, dtype=float)
+        # N = x.shape[0]
+        # if N % 2 > 0:
+        #     raise ValueError("must be a power of 2")
+        # elif N <= 2:
+        #     return np.real(self.discreteFourierTransform(x))
+        # else:
+        #     X_even = self.fastFourierTransform(x[::2])
+        #     X_odd = self.fastFourierTransform(x[1::2])
+        #     terms = np.exp(-2j * np.pi * np.arange(N) / N)
+        #     return np.real(np.concatenate([X_even + terms[:int(N / 2)] * X_odd,
+        #                            X_even + terms[int(N / 2):] * X_odd]))
 
     # Saving File Functionality
     def saveFile(self, filename, theycoords):
