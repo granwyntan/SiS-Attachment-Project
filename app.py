@@ -245,7 +245,7 @@ class GUI:  # Class to write all code in
         self.window.mainloop()
 
     def toggleAxes(self):
-        self.ax.axis(self.axesOn.get())
+        plt.axis(self.axesOn.get())
 
     def toggleGrid(self):
         self.ax.grid(None)
@@ -338,12 +338,12 @@ class GUI:  # Class to write all code in
         self.medianFiltering(self.y_coords)
         self.fastFourierData = self.fastFourierTransform(self.y_coords)
         # print(self.fastFourierData)
-        self.mvavg = self.ax.plot(self.x_coords, self.moving_averages, label="Moving Average")
-        self.lp = self.ax.plot(self.x_coords, self.filteredLowPass, label="Filtered Low Pass")
-        self.hp = self.ax.plot(self.x_coords, self.filteredHighPass, label="Filtered High Pass")
-        self.bp = self.ax.plot(self.x_coords, self.filteredBandPass, label="Filtered Band Pass")
-        self.md = self.ax.plot(self.x_coords, self.medianFilteredData, label="Median Filtered")
-        self.fft = self.ax.plot(self.x_coords, self.fastFourierData, label="Fast Fourier Transform")
+        self.ax.plot(self.x_coords, self.moving_averages, label="Moving Average")
+        self.ax.plot(self.x_coords, self.filteredLowPass, label="Filtered Low Pass")
+        self.ax.plot(self.x_coords, self.filteredHighPass, label="Filtered High Pass")
+        self.ax.plot(self.x_coords, self.filteredBandPass, label="Filtered Band Pass")
+        self.ax.plot(self.x_coords, self.medianFilteredData, label="Median Filtered")
+        self.ax.plot(self.x_coords, self.fastFourierData, label="Fast Fourier Transform")
         # TODO: Smoothing Splines
         self.ax.lines[7].set_visible(self.fft_on.get())
         self.ax.lines[6].set_visible(self.median_on.get())
@@ -365,8 +365,8 @@ class GUI:  # Class to write all code in
         self.ax.legend()
         self.ax.relim()
         self.ax.autoscale()
-        self.ax.set_xlim(min(self.x_coords)-self.xticks.get(), max(self.x_coords)+self.xticks.get())
-        self.ax.set_ylim(min(self.y_coords)-self.yticks.get(), max(self.y_coords)+self.yticks.get())
+        # self.ax.set_xlim(min(self.x_coords)-self.xticks.get(), max(self.x_coords)+self.xticks.get())
+        # self.ax.set_ylim(min(self.y_coords)-self.yticks.get(), max(self.y_coords)+self.yticks.get())
         plt.tight_layout()
         self.figure.canvas.draw()
         self.figure.canvas.flush_events()
@@ -424,44 +424,21 @@ class GUI:  # Class to write all code in
     def medianFiltering(self, data):
         self.medianFilteredData = scipy.signal.medfilt(data, kernel_size=7)
 
-    def discreteFourierTransform(self, data):
-        x = np.asarray(data, dtype=float)
-        N = x.shape[0]
-        n = np.arange(N)
-        k = n.reshape((N, 1))
-        M = np.exp(-2j * np.pi * k * n / N)
-        return np.dot(M, x)
+    def filter_rule(self, x, freq):
+        f_signal = 6
+        band = 0.05
+        if abs(freq) > f_signal + band or abs(freq) < f_signal - band:
+            return 0
+        else:
+            return x
 
-    def inverseFourierTransform(self,data):
-      # frequency
-      t = np.arange(self.x_coords)
-
-      # Create a sine wave with multiple frequencies(1 Hz, 2 Hz and 4 Hz)
-      a = np.sin(2 * np.pi * t) + np.sin(2 * 2 * np.pi * t) + np.sin(4 * 2 * np.pi * t)
-
-      # Do a Fourier transform on the signal
-      tx = np.fft.fft(a)
-
-      # Do an inverse Fourier transform on the signal
-      itx = np.fft.ifft(tx)
-
-
-    def fastFourierTransform(self, data):
-        return
+    def fastFourierTransform(self, signal, threshold=1e8):
+        fourier = np.fft.rfft(signal)
+        frequencies = np.fft.rfftfreq(len(signal), d=20e-3 / len(signal))
+        fourier[frequencies > threshold] = 200
+        return np.fft.irfft(fourier)
         # TODO: We need to make this work properly
-        # Can also use this: return np.real(scipy.fft.fft(np.array(data)))
-        # x = np.asarray(data, dtype=float)
-        # N = x.shape[0]
-        # if N % 2 > 0:
-        #     raise ValueError("must be a power of 2")
-        # elif N <= 2:
-        #     return np.real(self.discreteFourierTransform(x))
-        # else:
-        #     X_even = self.fastFourierTransform(x[::2])
-        #     X_odd = self.fastFourierTransform(x[1::2])
-        #     terms = np.exp(-2j * np.pi * np.arange(N) / N)
-        #     return np.real(np.concatenate([X_even + terms[:int(N / 2)] * X_odd,
-        #                            X_even + terms[int(N / 2):] * X_odd]))
+
 
     # Saving File Functionality
     def saveFile(self, filename, theycoords):
