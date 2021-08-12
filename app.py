@@ -439,6 +439,16 @@ class GUI:  # Class to write all code in
         return np.fft.irfft(fourier)
         # TODO: We need to make this work properly
 
+    signals = self.y_coords
+    signals = np.array(signals).T.reshape((999 // 3, 3, 800000))
+    def sample(signal, kernel_size):
+        sampled = np.zeros((signal.shape[0], signal.shape[1], signal.shape[2] // kernel_size))
+        for i in range(signal.shape[2] // kernel_size):
+            begin = kernel_size * i
+            end = min(kernel_size * (i + 1), signal.shape[2])
+            sampled[:, :, i] = np.mean(signal[:, :, begin:end], axis=2)
+        return sampled
+    sampled = sample(y_coords, 100)
 
     # Saving File Functionality
     def saveFile(self, filename, theycoords):
