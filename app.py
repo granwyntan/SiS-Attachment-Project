@@ -61,7 +61,7 @@ class GUI:  # Class to write all code in
         self.figure, self.ax = plt.subplots(figsize=(5, 4), dpi=100)
         # self.line = self.ax.plot(x, y)
         self.ax.plot(self.x_coords, self.y_coords)
-        # plt.ion()
+        plt.ion()
         self.ax.grid()
         self.ax.set_xlabel("Wavelength (nm)")
         self.ax.set_ylabel("Intensity")
@@ -119,8 +119,9 @@ class GUI:  # Class to write all code in
         self.moving_average = ttk.Checkbutton(frame2tab1, command=self.toggleMovingAverage, text="Moving Average",
                                               variable=self.moving_average_on)
         self.moving_average.grid(row=0, column=0, sticky=NSEW)
-
-        self.moving_average_slider = tk.Scale(frame2tab1, from_=1, to=42, orient=HORIZONTAL, length=650, command=)
+        self.moving_average_interval = 4
+        self.moving_average_slider = tk.Scale(frame2tab1, from_=1, to=100,orient=HORIZONTAL, length=650, command=self.updateMovingAverage)
+        self.moving_average_slider.set(self.moving_average_interval)
         self.moving_average_slider.grid(row=1, column=0, sticky=NSEW)
 
         self.low_pass = ttk.Checkbutton(frame2tab2, command=self.toggleLowPassFiltering, text="Low Pass Filtering",
@@ -263,6 +264,13 @@ class GUI:  # Class to write all code in
             self.ax.lines[2].set_visible(self.moving_average_on.get())
         self.filterCheck()
 
+    def updateMovingAverage(self, value):
+        print(value)
+        self.moving_average_interval = value
+        self.moving_averages = self.movingaverage(self.y_coords, self.moving_average_interval)
+        self.line2.set_ydata(self.moving_averages)
+        self.figure.canvas.draw()
+        self.figure.canvas.flush_events()
     # def setMovingAverage(self, value):
     #     if not value:
     #         self.moving_average.config(foreground="red")
@@ -333,14 +341,15 @@ class GUI:  # Class to write all code in
         self.ax.plot(self.x_coords, self.y_coords, label='Flourescence Data', color="royalblue")
         self.xticks.set(int((max(self.x_coords) - min(self.x_coords)) / 20))
         self.yticks.set(int((max(self.y_coords) - min(self.y_coords)) / 20))
-        self.moving_averages = self.movingaverage(self.y_coords, 4)
+        self.moving_average_slider.config(to=max(self.x_coords))
+        self.moving_averages = self.movingaverage(self.y_coords, self.moving_average_interval)
         self.lowPassFiltering(self.y_coords)
         self.highPassFiltering(self.y_coords)
         self.bandPassFiltering(self.y_coords)
         self.medianFiltering(self.y_coords)
         self.fastFourierData = self.fastFourierTransform(self.y_coords)
         # print(self.fastFourierData)
-        self.ax.plot(self.x_coords, self.moving_averages, label="Moving Average")
+        self.line2, = self.ax.plot(self.x_coords, self.moving_averages, label="Moving Average")
         self.ax.plot(self.x_coords, self.filteredLowPass, label="Filtered Low Pass")
         self.ax.plot(self.x_coords, self.filteredHighPass, label="Filtered High Pass")
         self.ax.plot(self.x_coords, self.filteredBandPass, label="Filtered Band Pass")
@@ -375,6 +384,7 @@ class GUI:  # Class to write all code in
 
     def clearData(self):
         self.x_coords = self.y_coords = []
+        self.moving_averages = self.filteredLowPass = self.filteredHighPass = self.filteredBandPass = self.medianFilteredData = self.fastFourierData = []
         self.ax.clear()
         self.ax.plot(self.x_coords, self.y_coords)
         # self.xslider.config(from_=0, to=100 + 1)
@@ -383,7 +393,6 @@ class GUI:  # Class to write all code in
         self.yticks.set(5)
         self.xslide['from'] = 1
         self.xslide['to'] = 100
-
         self.yslide['from'] = 1
         self.yslide['to'] = 100
         self.xticks.set(5)
@@ -434,10 +443,10 @@ class GUI:  # Class to write all code in
         else:
             return x
 
-    def fastFourierTransform(self, signal, threshold=1e8):
+    def fastFourierTransform(self, signal, threshold=0.987e4):
         fourier = np.fft.rfft(signal)
         frequencies = np.fft.rfftfreq(len(signal), d=20e-3 / len(signal))
-        fourier[frequencies > threshold] = 200
+        fourier[frequencies > threshold] = 0
         return np.fft.irfft(fourier)
         # TODO: We need to make this work properly
 
