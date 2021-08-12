@@ -120,6 +120,9 @@ class GUI:  # Class to write all code in
                                               variable=self.moving_average_on)
         self.moving_average.grid(row=0, column=0, sticky=NSEW)
 
+        self.moving_average_slider = tk.Scale(frame2tab1, from_=1, to=42, orient=HORIZONTAL, length=650, command=)
+        self.moving_average_slider.grid(row=1, column=0, sticky=NSEW)
+
         self.low_pass = ttk.Checkbutton(frame2tab2, command=self.toggleLowPassFiltering, text="Low Pass Filtering",
                                         variable=self.low_pass_on)
         self.low_pass.grid(row=0, column=0, sticky=NSEW)
@@ -146,18 +149,17 @@ class GUI:  # Class to write all code in
         # Label(frame2tab1, text="Save Data", anchor='w').grid(row=4, column=0, sticky=NSEW)
 
         ttk.Button(frame2tab1, text="Save Moving Average Data",
-                   command=lambda: self.saveFile("movingaverage", theycoords=self.moving_averages)).grid(row=5,
-                                                                                                         column=0,
-                                                                                                         sticky=NSEW)
+                   command=lambda: self.saveFile("movingaverage", theycoords=self.moving_averages)).grid(
+            row=2, column=0, sticky=W)
         ttk.Button(frame2tab2, text="Save Filtered Low Pass",
                    command=lambda: self.saveFile(filename="lowpass", theycoords=self.filteredLowPass)).grid(
-            row=6, column=0, sticky=NSEW)
+            row=2, column=0, sticky=W)
         ttk.Button(frame2tab2, text="Save Filtered High Pass Data",
                    command=lambda: self.saveFile(filename="highpass", theycoords=self.filteredHighPass)).grid(
-            row=6, column=1, sticky=NSEW)
+            row=2, column=1, sticky=W)
         ttk.Button(frame2tab2, text="Save Filtered Band Pass Data",
                    command=lambda: self.saveFile(filename="bandpass", theycoords=self.filteredBandPass)).grid(
-            row=6, column=2, sticky=NSEW)
+            row=2, column=2, sticky=W)
 
         frame2tab.pack(expand=1, fill=BOTH)
 
@@ -439,17 +441,6 @@ class GUI:  # Class to write all code in
         return np.fft.irfft(fourier)
         # TODO: We need to make this work properly
 
-    signals = self.y_coords
-    signals = np.array(signals).T.reshape((999 // 3, 3, 800000))
-    def sample(signal, kernel_size):
-        sampled = np.zeros((signal.shape[0], signal.shape[1], signal.shape[2] // kernel_size))
-        for i in range(signal.shape[2] // kernel_size):
-            begin = kernel_size * i
-            end = min(kernel_size * (i + 1), signal.shape[2])
-            sampled[:, :, i] = np.mean(signal[:, :, begin:end], axis=2)
-        return sampled
-    sampled = sample(y_coords, 100)
-
     # Saving File Functionality
     def saveFile(self, filename, theycoords):
         if self.x_coords and self.y_coords:
@@ -480,33 +471,33 @@ class GUI:  # Class to write all code in
         # Configuring File dialog and varipus file types
         if filename:  # If File Chosen
             # try:
-                with open(filename, 'r') as f:  # Open File
-                    response = tk.messagebox.askquestion("Open Source File",
-                                                         f"Open Source File at Filepath: \"{filename}\"?")  # Alert to check if user wants to open file
-                    if response == "yes":
-                        if self.x_coords != [] and self.y_coords != []:
-                            self.clearData()
-                            self.x_coords = []
-                            self.y_coords = []
-                        print(filename)
-                        lines = [line.strip() for line in f]
-                        for i in range(len(lines)):
-                            lines[i] = [float(lines[i].split()[0]), float(lines[i].split()[1])]
-                            print(repr(lines[i]))
+            with open(filename, 'r') as f:  # Open File
+                response = tk.messagebox.askquestion("Open Source File",
+                                                     f"Open Source File at Filepath: \"{filename}\"?")  # Alert to check if user wants to open file
+                if response == "yes":
+                    if self.x_coords != [] and self.y_coords != []:
+                        self.clearData()
+                        self.x_coords = []
+                        self.y_coords = []
+                    print(filename)
+                    lines = [line.strip() for line in f]
+                    for i in range(len(lines)):
+                        lines[i] = [float(lines[i].split()[0]), float(lines[i].split()[1])]
+                        print(repr(lines[i]))
 
-                        for x, y in lines:
-                            self.x_coords.append(x)
-                            self.y_coords.append(y)
-                        self.plotGraph()
-                        return
-                    else:
-                        return
-                return
-            # except Exception as e:  # If unable to open file
-            #     print(e)
-            #     tk.messagebox.showerror("Open Source File",
-            #                             f"An unknown error occurred when reading \"{filename}\"")  # Error
-            #     return
+                    for x, y in lines:
+                        self.x_coords.append(x)
+                        self.y_coords.append(y)
+                    self.plotGraph()
+                    return
+                else:
+                    return
+            return
+        # except Exception as e:  # If unable to open file
+        #     print(e)
+        #     tk.messagebox.showerror("Open Source File",
+        #                             f"An unknown error occurred when reading \"{filename}\"")  # Error
+        #     return
         else:
             tk.messagebox.showwarning("Open Source File", "No File Opened")  # Warning
             return
