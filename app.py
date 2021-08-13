@@ -100,30 +100,36 @@ class GUI:  # Class to write all code in
         # frame2tab.add(frame2tab3, text='Ratiometric Analysis')
 
         self.moving_average_on = BooleanVar()
-        self.moving_average_on.set(False)
+        self.moving_average_on.set(True)
 
         self.low_pass_on = BooleanVar()
-        self.low_pass_on.set(False)
+        self.low_pass_on.set(True)
         self.high_pass_on = BooleanVar()
         self.high_pass_on.set(False)
         self.band_pass_on = BooleanVar()
         self.band_pass_on.set(False)
 
         self.median_on = BooleanVar()
-        self.median_on.set(False)
+        self.median_on.set(True)
 
         self.fft_on = BooleanVar()
-        self.fft_on.set(False)
+        self.fft_on.set(True)
 
         # Label(frame2tab1, text="Filters", anchor='w').grid(row=0, column=0, sticky=NSEW)
         self.moving_average = ttk.Checkbutton(frame2tab1, command=self.toggleMovingAverage, text="Moving Average",
                                               variable=self.moving_average_on)
         self.moving_average.grid(row=0, column=0, sticky=NSEW)
-        self.moving_average_interval = 4
-        self.moving_average_slider = tk.Scale(frame2tab1, from_=1, to=100,orient=HORIZONTAL, length=650, command=self.updateMovingAverage)
-        self.moving_average_slider.set(self.moving_average_interval)
-        self.moving_average_slider.grid(row=1, column=0, sticky=NSEW)
+        self.moving_average_interval = IntVar()
+        self.moving_average_interval.set(4)
 
+        self.moving_average_slider = ttk.Scale(frame2tab1, from_=1, to=100, orient=HORIZONTAL, length=450, variable=self.moving_average_interval, command=self.updateMovingAverage)
+
+        self.moving_average_field = ttk.Entry(frame2tab1, textvariable=self.moving_average_interval)
+        self.moving_average_field.bind("<Return>", lambda event: self.updateMovingAverage())
+
+        self.moving_average_field.grid(row=1, column=0, sticky=NSEW)
+        self.moving_average_slider.grid(row=1, column=1, sticky=NSEW)
+        # TODO: Expose Settings for Other Filters
         self.low_pass = ttk.Checkbutton(frame2tab2, command=self.toggleLowPassFiltering, text="Low Pass Filtering",
                                         variable=self.low_pass_on)
         self.low_pass.grid(row=0, column=0, sticky=NSEW)
@@ -154,13 +160,13 @@ class GUI:  # Class to write all code in
             row=2, column=0, sticky=W)
         ttk.Button(frame2tab2, text="Save Filtered Low Pass",
                    command=lambda: self.saveFile(filename="lowpass", theycoords=self.filteredLowPass)).grid(
-            row=2, column=0, sticky=W)
+            row=3, column=0, sticky=W)
         ttk.Button(frame2tab2, text="Save Filtered High Pass Data",
                    command=lambda: self.saveFile(filename="highpass", theycoords=self.filteredHighPass)).grid(
-            row=2, column=1, sticky=W)
+            row=3, column=1, sticky=W)
         ttk.Button(frame2tab2, text="Save Filtered Band Pass Data",
                    command=lambda: self.saveFile(filename="bandpass", theycoords=self.filteredBandPass)).grid(
-            row=2, column=2, sticky=W)
+            row=3, column=2, sticky=W)
 
         frame2tab.pack(expand=1, fill=BOTH)
 
@@ -197,8 +203,8 @@ class GUI:  # Class to write all code in
         # self.xslider.pack()
 
         self.xspin = tk.Spinbox(frame1tab3, state='readonly', from_=1, to=100, textvariable=self.xticks, width=10,
-                                increment=5, command=self.updateValue)
-        self.xslide = Limiter(frame1tab3, variable=self.xticks, orient='horizontal', length=200,
+                                increment=1, command=self.updateValue)
+        self.xslide = Limiter(frame1tab3, variable=self.xticks, orient='horizontal', length=500,
                               command=self.updateValue, precision=0)
         self.xslide['to'] = 100
         self.xslide['from'] = 1
@@ -207,8 +213,8 @@ class GUI:  # Class to write all code in
         self.xslide.grid(row=1, column=1, sticky='news')
 
         self.yspin = tk.Spinbox(frame1tab3, state='readonly', from_=1, to=100, textvariable=self.yticks, width=10,
-                                increment=5, command=self.updateValue)
-        self.yslide = Limiter(frame1tab3, variable=self.yticks, orient='horizontal', length=200,
+                                increment=1, command=self.updateValue)
+        self.yslide = Limiter(frame1tab3, variable=self.yticks, orient='horizontal', length=500,
                               command=self.updateValue, precision=0)
         self.yslide['to'] = 100
         self.yslide['from'] = 1
@@ -223,12 +229,11 @@ class GUI:  # Class to write all code in
 
         self.gridOn = BooleanVar(value=True)
         self.axesOn = BooleanVar(value=True)
-        # TODO: Setting to turn grid on and off
         ttk.Checkbutton(frame1tab3, command=self.toggleGrid, text="Grid",
                         variable=self.gridOn).grid(row=3, column=0, sticky=NSEW)
-        # TODO: Setting to turn axes and labels on and off
         ttk.Checkbutton(frame1tab3, command=self.toggleAxes, text="Axes",
                         variable=self.axesOn).grid(row=4, column=0, sticky=NSEW)
+        #TODO: Hide Data Points (Scatter Plot) and Line
 
         self.updateValue(self)
 
@@ -247,58 +252,67 @@ class GUI:  # Class to write all code in
         # Main Loop
         self.window.mainloop()
 
+    # Updating Graphs Functions
+    def updateMovingAverage(self, *args):
+        # self.moving_average_interval = self.moving_average_interval.get()
+        self.moving_average_interval.set(int(self.moving_average_interval.get()))
+        if self.x_coords and self.y_coords:
+            self.moving_averages = self.movingaverage(self.y_coords, self.moving_average_interval.get())
+            self.mvavg.set_ydata(self.moving_averages)
+            self.figure.canvas.draw()
+            self.figure.canvas.flush_events()
+    #TODO: Make this work for other graphs also
+
+    # Toggles and Settings
     def toggleAxes(self):
         plt.axis(self.axesOn.get())
 
     def toggleGrid(self):
-        self.ax.grid(None)
+        plt.grid(self.gridOn.get())
 
-    def toggleMovingAverage(self):
-        # if self.moving_average_on:
-        #     # self.moving_average.config(foreground="red")
-        #     self.moving_average_on = False
-        # else:
-        #     # self.moving_average.config(foreground="green")
-        #     self.moving_average_on = True
-        if len(self.ax.lines) > 2:
-            self.ax.lines[2].set_visible(self.moving_average_on.get())
-        self.filterCheck()
-
-    def updateMovingAverage(self, value):
-        print(value)
-        self.moving_average_interval = value
-        self.moving_averages = self.movingaverage(self.y_coords, self.moving_average_interval)
-        self.line2.set_ydata(self.moving_averages)
+    def rescaleAndRelimit(self):
+        self.ax.legend()
+        self.ax.relim()
+        self.ax.autoscale()
+        plt.tight_layout()
         self.figure.canvas.draw()
         self.figure.canvas.flush_events()
-    # def setMovingAverage(self, value):
-    #     if not value:
-    #         self.moving_average.config(foreground="red")
-    #     else:
-    #         self.moving_average.config(foreground="green")
+
+    def hideDataPoints(self):
+        pass
+
+    def hideFlourescenceData(self, value):
+        self.ax.lines[1].set_visible(value)
+        self.filterCheck()
+
+    def toggleMovingAverage(self):
+        if len(self.ax.lines) > 2:
+            self.mvavg.set_visible(self.moving_average_on.get())
+        self.filterCheck()
+
     def toggleLowPassFiltering(self):
         if len(self.ax.lines) > 2:
-            self.ax.lines[3].set_visible(self.low_pass_on.get())
+            self.lpass.set_visible(self.low_pass_on.get())
         self.filterCheck()
 
     def toggleHighPassFiltering(self):
         if len(self.ax.lines) > 2:
-            self.ax.lines[4].set_visible(self.high_pass_on.get())
+            self.hpass.set_visible(self.high_pass_on.get())
         self.filterCheck()
 
     def toggleBandPassFiltering(self):
         if len(self.ax.lines) > 2:
-            self.ax.lines[5].set_visible(self.band_pass_on.get())
+            self.bpass.set_visible(self.band_pass_on.get())
         self.filterCheck()
 
     def toggleMedianFiltering(self):
         if len(self.ax.lines) > 2:
-            self.ax.lines[6].set_visible(self.median_on.get())
+            self.medfilt.set_visible(self.median_on.get())
         self.filterCheck()
 
     def toggleFastFourierTransform(self):
         if len(self.ax.lines) > 2:
-            self.ax.lines[7].set_visible(self.fft_on.get())
+            self.fftline.set_visible(self.fft_on.get())
         self.filterCheck()
 
     def filterCheck(self):
@@ -307,15 +321,9 @@ class GUI:  # Class to write all code in
         self.figure.canvas.draw()
         self.figure.canvas.flush_events()
 
-    # def setSignalFiltering(self, value):
-    #     if not value:
-    #         self.signal_filtering.config(fg="red")
-    #     else:
-    #         self.signal_filtering.config(fg="green")
-
     def updateValue(self, *args):
-        print(self.xspin.get())
-        print(self.xslide.get())
+        # print(self.xspin.get())
+        # print(self.xslide.get())
         if self.x_coords != [] and self.y_coords != []:
             self.ax.set_xticks(np.arange(min(self.x_coords), max(self.x_coords) + 1, self.xticks.get()))
             self.ax.set_yticks(np.arange(min(self.y_coords), max(self.y_coords) + 1, self.yticks.get()))
@@ -336,32 +344,32 @@ class GUI:  # Class to write all code in
 
     # Main Graph Plotting Function
     def plotGraph(self):
-        # if self.x_coords and self.y_coords:
         self.ax.scatter(self.x_coords, self.y_coords, label="Data Points", color="lightcoral")
         self.ax.plot(self.x_coords, self.y_coords, label='Flourescence Data', color="royalblue")
         self.xticks.set(int((max(self.x_coords) - min(self.x_coords)) / 20))
         self.yticks.set(int((max(self.y_coords) - min(self.y_coords)) / 20))
         self.moving_average_slider.config(to=max(self.x_coords))
-        self.moving_averages = self.movingaverage(self.y_coords, self.moving_average_interval)
+        self.moving_averages = self.movingaverage(self.y_coords, self.moving_average_interval.get())
         self.lowPassFiltering(self.y_coords)
         self.highPassFiltering(self.y_coords)
         self.bandPassFiltering(self.y_coords)
         self.medianFiltering(self.y_coords)
         self.fastFourierData = self.fastFourierTransform(self.y_coords)
         # print(self.fastFourierData)
-        self.line2, = self.ax.plot(self.x_coords, self.moving_averages, label="Moving Average")
-        self.ax.plot(self.x_coords, self.filteredLowPass, label="Filtered Low Pass")
-        self.ax.plot(self.x_coords, self.filteredHighPass, label="Filtered High Pass")
-        self.ax.plot(self.x_coords, self.filteredBandPass, label="Filtered Band Pass")
-        self.ax.plot(self.x_coords, self.medianFilteredData, label="Median Filtered")
-        self.ax.plot(self.x_coords, self.fastFourierData, label="Fast Fourier Transform")
+        self.mvavg, = self.ax.plot(self.x_coords, self.moving_averages, label="Moving Average")
+        self.lpass, = self.ax.plot(self.x_coords, self.filteredLowPass, label="Filtered Low Pass")
+        self.hpass, = self.ax.plot(self.x_coords, self.filteredHighPass, label="Filtered High Pass")
+        self.bpass, = self.ax.plot(self.x_coords, self.filteredBandPass, label="Filtered Band Pass")
+        self.medfilt, = self.ax.plot(self.x_coords, self.medianFilteredData, label="Median Filtered")
+        self.fftline, = self.ax.plot(self.x_coords, self.fastFourierData, label="Fast Fourier Transform")
         # TODO: Smoothing Splines
-        self.ax.lines[7].set_visible(self.fft_on.get())
-        self.ax.lines[6].set_visible(self.median_on.get())
-        self.ax.lines[5].set_visible(self.band_pass_on.get())
-        self.ax.lines[4].set_visible(self.high_pass_on.get())
-        self.ax.lines[3].set_visible(self.low_pass_on.get())
-        self.ax.lines[2].set_visible(self.moving_average_on.get())
+        self.fftline.set_visible(self.fft_on.get())
+        self.medfilt.set_visible(self.median_on.get())
+        self.bpass.set_visible(self.band_pass_on.get())
+        self.hpass.set_visible(self.high_pass_on.get())
+        self.lpass.set_visible(self.low_pass_on.get())
+        self.mvavg.set_visible(self.moving_average_on.get())
+
         # self.xslider.config(from_=self.xticks.get(), to=(max(self.x_coords) - min(self.x_coords)))
         # self.yslider.config(from_=self.yticks.get(), to=(max(self.y_coords) - min(self.y_coords)))
 
@@ -371,7 +379,7 @@ class GUI:  # Class to write all code in
         self.yslide['from'] = int(self.yticks.get())
         self.yslide['to'] = int(max(self.y_coords) - min(self.y_coords))
 
-        # self.ax.plt.gca()
+        # plt.gca()
         self.updateValue(self)
         self.ax.legend()
         self.ax.relim()
@@ -383,8 +391,14 @@ class GUI:  # Class to write all code in
         self.figure.canvas.flush_events()
 
     def clearData(self):
-        self.x_coords = self.y_coords = []
-        self.moving_averages = self.filteredLowPass = self.filteredHighPass = self.filteredBandPass = self.medianFilteredData = self.fastFourierData = []
+        self.x_coords = []
+        self.y_coords = []
+        self.moving_averages = []
+        self.filteredLowPass = []
+        self.filteredHighPass = []
+        self.filteredBandPass = []
+        self.medianFilteredData = []
+        self.fastFourierData = []
         self.ax.clear()
         self.ax.plot(self.x_coords, self.y_coords)
         # self.xslider.config(from_=0, to=100 + 1)
@@ -448,9 +462,24 @@ class GUI:  # Class to write all code in
         frequencies = np.fft.rfftfreq(len(signal), d=20e-3 / len(signal))
         fourier[frequencies > threshold] = 0
         return np.fft.irfft(fourier)
-        # TODO: We need to make this work properly
 
     # Saving File Functionality
+    def saveFile(self, filename, theycoords):
+        if self.x_coords and self.y_coords:
+            try:
+                f = filedialog.asksaveasfile(initialfile=f'{filename}.txt', defaultextension=".txt",
+                                             filetypes=[("Text Documents", "*.txt"), ("All Files", "*.*")])
+                data = ""
+                for i in range(len(self.x_coords)):
+                    data += f"{self.x_coords[i]} {theycoords[i]}\n"
+                f.write(data)
+                f.close()
+            except:
+                return
+        else:
+            tk.messagebox.showinfo("Save to File", "No Data Loaded")
+
+    # Opening File Functionality
     def saveFile(self, filename, theycoords):
         if self.x_coords and self.y_coords:
             try:
@@ -470,7 +499,6 @@ class GUI:  # Class to write all code in
     def openBackgroundFile(self):
         # TODO: Background File Functionality and processing
         pass
-
     def openFile(self):
         filename = filedialog.askopenfilename(initialdir="",
                                               title="Open Acquired Spectral Data File",
@@ -492,8 +520,7 @@ class GUI:  # Class to write all code in
                     lines = [line.strip() for line in f]
                     for i in range(len(lines)):
                         lines[i] = [float(lines[i].split()[0]), float(lines[i].split()[1])]
-                        print(repr(lines[i]))
-
+                        # print(repr(lines[i]))
                     for x, y in lines:
                         self.x_coords.append(x)
                         self.y_coords.append(y)
@@ -510,11 +537,8 @@ class GUI:  # Class to write all code in
         else:
             tk.messagebox.showwarning("Open Source File", "No File Opened")  # Warning
             return
-
     def _quit(self):
         self.window.quit()
         self.window.destroy()
-
-
 if __name__ == '__main__':
     app = GUI()
