@@ -41,7 +41,6 @@ class Limiter(ttk.Scale):
         self.winfo_toplevel().globalsetvar(self.cget('variable'), (newvalue))
         self.chain(newvalue)
 
-
 class GUI:  # Class to write all code in
     def __init__(self):
         self.x_coords = []
@@ -92,7 +91,7 @@ class GUI:  # Class to write all code in
         frame2tab4 = ttk.Frame(frame2tab)
         frame2tab5 = ttk.Frame(frame2tab)
         frame2tab.add(frame2tab1, text='Moving Average')
-        frame2tab.add(frame2tab2, text='Signal Filtering')
+        frame2tab.add(frame2tab2, text='Butterworth Filter')
         frame2tab.add(frame2tab3, text='Median Filtering')
         frame2tab.add(frame2tab4, text='Fast Fourier Transform')
         frame2tab.add(frame2tab5, text='Smoothing Splines')
@@ -119,6 +118,8 @@ class GUI:  # Class to write all code in
         self.moving_average = ttk.Checkbutton(frame2tab1, command=self.toggleMovingAverage, text="Moving Average",
                                               variable=self.moving_average_on)
         self.moving_average.grid(row=0, column=0, sticky=NSEW)
+        ttk.Label(frame2tab1, text="Window Size:").grid(row=1, column=0, sticky=NSEW)
+
         self.moving_average_interval = IntVar()
         self.moving_average_interval.set(4)
 
@@ -127,8 +128,9 @@ class GUI:  # Class to write all code in
         self.moving_average_field = ttk.Entry(frame2tab1, textvariable=self.moving_average_interval)
         self.moving_average_field.bind("<Return>", lambda event: self.updateMovingAverage())
 
-        self.moving_average_field.grid(row=1, column=0, sticky=NSEW)
-        self.moving_average_slider.grid(row=1, column=1, sticky=NSEW)
+        self.moving_average_field.grid(row=2, column=0, sticky=NSEW)
+        self.moving_average_slider.grid(row=2, column=1, sticky=NSEW)
+
         # TODO: Expose Settings for Other Filters
         self.low_pass = ttk.Checkbutton(frame2tab2, command=self.toggleLowPassFiltering, text="Low Pass Filtering",
                                         variable=self.low_pass_on)
@@ -157,7 +159,7 @@ class GUI:  # Class to write all code in
 
         ttk.Button(frame2tab1, text="Save Moving Average Data",
                    command=lambda: self.saveFile("movingaverage", theycoords=self.moving_averages)).grid(
-            row=2, column=0, sticky=W)
+            row=3, column=0, sticky=W)
         ttk.Button(frame2tab2, text="Save Filtered Low Pass",
                    command=lambda: self.saveFile(filename="lowpass", theycoords=self.filteredLowPass)).grid(
             row=3, column=0, sticky=W)
@@ -201,26 +203,25 @@ class GUI:  # Class to write all code in
         # self.xslider = ttk.Scale(frame1tab3, from_=1, to=1000, orient=HORIZONTAL, command=self.updateValue, variable=self.xticks)
         # self.xslider.set(self.xticks)
         # self.xslider.pack()
+        ttk.Label(frame1tab3, text="X-axis: ").grid(row=1, column=0, sticky=NSEW)
+        self.xspin = tk.Spinbox(frame1tab3, from_=3, to=100, textvariable=self.xticks, width=10,
+                                increment=5, command=self.updateValue)
+        self.xslide = ttk.Scale(frame1tab3, from_=3, to=100, orient=HORIZONTAL, length=400, variable=self.xticks,
+                  command=self.updateValue)
 
-        self.xspin = tk.Spinbox(frame1tab3, state='readonly', from_=1, to=100, textvariable=self.xticks, width=10,
-                                increment=1, command=self.updateValue)
-        self.xslide = Limiter(frame1tab3, variable=self.xticks, orient='horizontal', length=500,
-                              command=self.updateValue, precision=0)
-        self.xslide['to'] = 100
-        self.xslide['from'] = 1
+        self.xspin.grid(row=1, column=1, sticky=NSEW)
+        self.xslide.grid(row=1, column=2, sticky=NSEW)
+        self.xspin.bind("<Return>", lambda event: self.updateValue())
 
-        self.xspin.grid(row=1, column=0, sticky='news')
-        self.xslide.grid(row=1, column=1, sticky='news')
+        ttk.Label(frame1tab3, text="Y-axis: ").grid(row=2, column=0, sticky=NSEW)
+        self.yspin = tk.Spinbox(frame1tab3, from_=3, to=100, textvariable=self.yticks, width=10,
+                                increment=5, command=self.updateValue)
+        self.yslide = ttk.Scale(frame1tab3, from_=3, to=100, orient=HORIZONTAL, length=400, variable=self.yticks,
+                  command=self.updateValue)
+        self.yspin.bind("<Return>", lambda event: self.updateValue())
 
-        self.yspin = tk.Spinbox(frame1tab3, state='readonly', from_=1, to=100, textvariable=self.yticks, width=10,
-                                increment=1, command=self.updateValue)
-        self.yslide = Limiter(frame1tab3, variable=self.yticks, orient='horizontal', length=500,
-                              command=self.updateValue, precision=0)
-        self.yslide['to'] = 100
-        self.yslide['from'] = 1
-
-        self.yspin.grid(row=2, column=0, sticky='news')
-        self.yslide.grid(row=2, column=1, sticky='news')
+        self.yspin.grid(row=2, column=1, sticky=NSEW)
+        self.yslide.grid(row=2, column=2, sticky=NSEW)
 
         frame1top.place(relx=0, y=0, relwidth=1 / 2, relheight=5 / 8)
         frame1.place(relx=0, rely=5 / 8, relwidth=1 / 2, relheight=3 / 8)
@@ -235,7 +236,7 @@ class GUI:  # Class to write all code in
                         variable=self.axesOn).grid(row=4, column=0, sticky=NSEW)
         #TODO: Hide Data Points (Scatter Plot) and Line
 
-        self.updateValue(self)
+        self.updateValue()
 
         ttk.Button(frame1tab1, text="Select Flourescence Data", command=self.openFile).pack(side=TOP)
         ttk.Button(frame1tab1, text="Select Background Data", command=self.openBackgroundFile).pack(side=TOP)
@@ -255,11 +256,12 @@ class GUI:  # Class to write all code in
     # Updating Graphs Functions
     def updateMovingAverage(self, *args):
         # self.moving_average_interval = self.moving_average_interval.get()
-        limit = max(self.x_coords) if self.x_coords and self.y_coords else 100
-        if self.moving_average_interval.get() < 1:
-            self.moving_average_interval.set(1)
-        elif self.moving_average_interval.get() > limit:
-            self.moving_average_interval.set(int(limit))
+        lower_limit = 1
+        upper_limit = max(self.x_coords) if self.x_coords and self.y_coords else 100
+        if self.moving_average_interval.get() < lower_limit:
+            self.moving_average_interval.set(int(lower_limit))
+        elif self.moving_average_interval.get() > upper_limit:
+            self.moving_average_interval.set(int(upper_limit))
         else:
             self.moving_average_interval.set(self.moving_average_interval.get())
 
@@ -268,6 +270,8 @@ class GUI:  # Class to write all code in
             self.mvavg.set_ydata(self.moving_averages)
             self.figure.canvas.draw()
             self.figure.canvas.flush_events()
+    def updateLowPassFiltering(self):
+        lower_lim
     #TODO: Make this work for other graphs also
 
     # Toggles and Settings
@@ -278,9 +282,13 @@ class GUI:  # Class to write all code in
         plt.grid(self.gridOn.get())
 
     def rescaleAndRelimit(self):
-        self.ax.legend()
         self.ax.relim()
         self.ax.autoscale()
+        if self.x_coords and self.y_coords:
+            self.ax.legend()
+        else:
+            self.ax.set_ylim(0, 100)
+            self.ax.set_xlim(0, 100)
         plt.tight_layout()
         self.figure.canvas.draw()
         self.figure.canvas.flush_events()
@@ -329,14 +337,15 @@ class GUI:  # Class to write all code in
         self.figure.canvas.flush_events()
 
     def updateValue(self, *args):
-        # print(self.xspin.get())
-        # print(self.xslide.get())
+        self.xticks.set(int(float(self.xspin.get())))
+        self.yticks.set(int(float(self.yspin.get())))
         if self.x_coords != [] and self.y_coords != []:
             self.ax.set_xticks(np.arange(min(self.x_coords), max(self.x_coords) + 1, self.xticks.get()))
             self.ax.set_yticks(np.arange(min(self.y_coords), max(self.y_coords) + 1, self.yticks.get()))
         else:
             self.ax.set_xticks(np.arange(0, 100 + 1, self.xticks.get()))
             self.ax.set_yticks(np.arange(0, 100 + 1, self.yticks.get()))
+        self.rescaleAndRelimit()
         self.figure.canvas.draw()
         self.figure.canvas.flush_events()
 
@@ -380,22 +389,13 @@ class GUI:  # Class to write all code in
         # self.xslider.config(from_=self.xticks.get(), to=(max(self.x_coords) - min(self.x_coords)))
         # self.yslider.config(from_=self.yticks.get(), to=(max(self.y_coords) - min(self.y_coords)))
 
-        self.xslide['from'] = int(self.xticks.get())
-        self.xslide['to'] = int(max(self.x_coords) - min(self.x_coords))
-
-        self.yslide['from'] = int(self.yticks.get())
-        self.yslide['to'] = int(max(self.y_coords) - min(self.y_coords))
+        self.xslide.config(from_=int(self.xticks.get()), to=int(max(self.x_coords) - min(self.x_coords)))
+        self.yslide.config(from_=int(self.yticks.get()), to=int(max(self.y_coords) - min(self.y_coords)))
 
         # plt.gca()
-        self.updateValue(self)
-        self.ax.legend()
-        self.ax.relim()
-        self.ax.autoscale()
-        # self.ax.set_xlim(min(self.x_coords)-self.xticks.get(), max(self.x_coords)+self.xticks.get())
-        # self.ax.set_ylim(min(self.y_coords)-self.yticks.get(), max(self.y_coords)+self.yticks.get())
-        plt.tight_layout()
-        self.figure.canvas.draw()
-        self.figure.canvas.flush_events()
+        self.updateValue()
+        # # self.ax.set_xlim(min(self.x_coords)-self.xticks.get(), max(self.x_coords)+self.xticks.get())
+        # # self.ax.set_ylim(min(self.y_coords)-self.yticks.get(), max(self.y_coords)+self.yticks.get())
 
     def clearData(self):
         self.x_coords = []
@@ -422,13 +422,7 @@ class GUI:  # Class to write all code in
         self.ax.set_xlabel("Wavelength (nm)")
         self.ax.set_ylabel("Intensity")
         self.ax.set_title("Raw Data")
-        self.updateValue(self)
-        self.ax.relim()
-        self.ax.autoscale()
-        self.ax.set_ylim(0, 100)
-        self.ax.set_xlim(0, 100)
-        self.figure.canvas.draw()
-        self.figure.canvas.flush_events()
+        self.updateValue()
 
     # Filters
     def movingaverage(self, interval, window_size):
