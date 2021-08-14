@@ -14,6 +14,7 @@ from matplotlib.figure import Figure
 import scipy.signal
 import os
 import time
+import math
 
 '''
 Notebook syntax: Notebook(master=None, **options)
@@ -26,20 +27,6 @@ Frame Syntax: Frame(master=None, **options)
 master: tabControl is the parent widget for the tabs.
 options: The options accepted by the Frame() method are class_, cursor, padding, relief, style, takefocus, height and width. Options are not used in this program.
 '''
-
-
-class Limiter(ttk.Scale):
-    """ ttk.Scale sublass that limits the precision of values. """
-
-    def __init__(self, *args, **kwargs):
-        self.precision = kwargs.pop('precision')  # Remove non-std kwarg.
-        self.chain = kwargs.pop('command', lambda *a: None)  # Save if present.
-        super(Limiter, self).__init__(*args, command=self._value_changed, **kwargs)
-
-    def _value_changed(self, newvalue):
-        newvalue = int(round(float(newvalue), self.precision))
-        self.winfo_toplevel().globalsetvar(self.cget('variable'), (newvalue))
-        self.chain(newvalue)
 
 class GUI:  # Class to write all code in
     def __init__(self):
@@ -120,8 +107,7 @@ class GUI:  # Class to write all code in
         self.moving_average.grid(row=0, column=0, sticky=NSEW)
         ttk.Label(frame2tab1, text="Window Size:").grid(row=1, column=0, sticky=NSEW)
 
-        self.moving_average_interval = IntVar()
-        self.moving_average_interval.set(4)
+        self.moving_average_interval = IntVar(value=4)
 
         self.moving_average_slider = ttk.Scale(frame2tab1, from_=1, to=100, orient=HORIZONTAL, length=450, variable=self.moving_average_interval, command=self.updateMovingAverage)
 
@@ -132,21 +118,52 @@ class GUI:  # Class to write all code in
         self.moving_average_slider.grid(row=2, column=1, sticky=NSEW)
 
         # TODO: Expose Settings for Other Filters
-        self.low_pass = ttk.Checkbutton(frame2tab2, command=self.toggleLowPassFiltering, text="Low Pass Filtering",
-                                        variable=self.low_pass_on)
+        self.low_pass = ttk.Checkbutton(frame2tab2, command=self.toggleLowPassFiltering, text="Low Pass Filtering", variable=self.low_pass_on)
         self.low_pass.grid(row=0, column=0, sticky=NSEW)
-        self.high_pass = ttk.Checkbutton(frame2tab2, command=self.toggleHighPassFiltering, text="High Pass Filtering",
-                                         variable=self.high_pass_on)
-        self.high_pass.grid(row=1, column=0, sticky=NSEW)
-        self.band_pass = ttk.Checkbutton(frame2tab2, command=self.toggleBandPassFiltering, text="Band Pass Filtering",
-                                         variable=self.band_pass_on)
-        self.band_pass.grid(row=2, column=0, sticky=NSEW)
-        self.median = ttk.Checkbutton(frame2tab3, command=self.toggleMedianFiltering, text="Median Filtering",
-                                      variable=self.median_on)
+        self.high_pass = ttk.Checkbutton(frame2tab2, command=self.toggleHighPassFiltering, text="High Pass Filtering", variable=self.high_pass_on)
+        self.high_pass.grid(row=6, column=0, sticky=NSEW)
+        self.band_pass = ttk.Checkbutton(frame2tab2, command=self.toggleBandPassFiltering, text="Band Pass Filtering", variable=self.band_pass_on)
+        self.band_pass.grid(row=8, column=0, sticky=NSEW)
+        ttk.Label(frame2tab2, text="Order:").grid(row=1, column=0, sticky=NSEW)
+        ttk.Label(frame2tab2, text="Cut-off Frequency:").grid(row=3, column=0, sticky=NSEW)
+
+        self.low_pass_order = IntVar(value=3)
+        self.low_pass_cut_off = DoubleVar(value=0.05)
+
+        self.lpass_order_slider = ttk.Scale(frame2tab2, from_=1, to=50, orient=HORIZONTAL, length=450, variable=self.low_pass_order, command=self.updateLowPassFiltering)
+        self.lpass_order_field = ttk.Entry(frame2tab2, textvariable=self.low_pass_order)
+        self.lpass_order_field.bind("<Return>", lambda event: self.updateLowPassFiltering())
+        self.lpass_order_field.grid(row=2, column=0, sticky=NSEW)
+        self.lpass_order_slider.grid(row=2, column=1, sticky=NSEW)
+
+        self.lpass_freq_slider = ttk.Scale(frame2tab2, from_=0.001, to=0.999, orient=HORIZONTAL, length=450,
+                                            variable=self.low_pass_cut_off, command=self.updateLowPassFiltering)
+        self.lpass_freq_field = ttk.Entry(frame2tab2, textvariable=self.low_pass_cut_off)
+        self.lpass_freq_field.bind("<Return>", lambda event: self.updateLowPassFiltering())
+        self.lpass_freq_field.grid(row=4, column=0, sticky=NSEW)
+        self.lpass_freq_slider.grid(row=4, column=1, sticky=NSEW)
+
+        self.median = ttk.Checkbutton(frame2tab3, command=self.toggleMedianFiltering, text="Median Filtering", variable=self.median_on)
         self.median.grid(row=0, column=0, sticky=NSEW)
-        self.fft = ttk.Checkbutton(frame2tab4, command=self.toggleFastFourierTransform, text="Fast Fourier Transform",
-                                   variable=self.fft_on)
+
+        ttk.Label(frame2tab3, text="Kernel Size:").grid(row=1, column=0, sticky=NSEW)
+
+        self.median_kernel = IntVar(value=7)
+
+        self.median_slider = ttk.Scale(frame2tab3, from_=1, to=100, orient=HORIZONTAL, length=450,
+                                               variable=self.median_kernel, command=self.updateMedianFiltering)
+
+        self.median_field = ttk.Entry(frame2tab3, textvariable=self.median_kernel)
+        self.median_field.bind("<Return>", lambda event: self.updateMedianFiltering())
+        self.median_field.grid(row=2, column=0, sticky=NSEW)
+        self.median_slider.grid(row=2, column=1, sticky=NSEW)
+
+        self.fft = ttk.Checkbutton(frame2tab4, command=self.toggleFastFourierTransform, text="Fast Fourier Transform", variable=self.fft_on)
         self.fft.grid(row=0, column=0, sticky=NSEW)
+        self.fft_thereshold = DoubleVar(value=1e4)
+        self.fft_field = ttk.Entry(frame2tab4, textvariable=self.fft_thereshold)
+        self.fft_field.bind("<Return>", lambda event: self.updateFastFourierTransform())
+        self.fft_field.grid(row=2, column=0, sticky=NSEW)
 
         self.moving_averages = []
         self.filteredLowPass = []
@@ -160,15 +177,21 @@ class GUI:  # Class to write all code in
         ttk.Button(frame2tab1, text="Save Moving Average Data",
                    command=lambda: self.saveFile("movingaverage", theycoords=self.moving_averages)).grid(
             row=3, column=0, sticky=W)
-        ttk.Button(frame2tab2, text="Save Filtered Low Pass",
+        ttk.Button(frame2tab2, text="Save Filtered Low Pass Data",
                    command=lambda: self.saveFile(filename="lowpass", theycoords=self.filteredLowPass)).grid(
-            row=3, column=0, sticky=W)
+            row=5, column=0, sticky=W)
         ttk.Button(frame2tab2, text="Save Filtered High Pass Data",
                    command=lambda: self.saveFile(filename="highpass", theycoords=self.filteredHighPass)).grid(
-            row=3, column=1, sticky=W)
+            row=7, column=0, sticky=W)
         ttk.Button(frame2tab2, text="Save Filtered Band Pass Data",
                    command=lambda: self.saveFile(filename="bandpass", theycoords=self.filteredBandPass)).grid(
-            row=3, column=2, sticky=W)
+            row=9, column=0, sticky=W)
+        ttk.Button(frame2tab3, text="Save Median Filtered Data",
+                   command=lambda: self.saveFile(filename="medianfiltered", theycoords=self.medianFilteredData)).grid(
+            row=3, column=0, sticky=W)
+        ttk.Button(frame2tab4, text="Save Fast Fourier Transform Data",
+                   command=lambda: self.saveFile(filename="fastfouriertransform", theycoords=self.fastFourierData)).grid(
+            row=3, column=0, sticky=W)
 
         frame2tab.pack(expand=1, fill=BOTH)
 
@@ -270,8 +293,41 @@ class GUI:  # Class to write all code in
             self.mvavg.set_ydata(self.moving_averages)
             self.figure.canvas.draw()
             self.figure.canvas.flush_events()
-    def updateLowPassFiltering(self):
-        lower_lim
+
+    def updateLowPassFiltering(self, *args):
+        self.low_pass_order.set(int(self.low_pass_order.get()))
+        if self.x_coords and self.y_coords:
+            self.filteredLowPass = self.lowPassFiltering(self.y_coords, self.low_pass_order.get(), self.low_pass_cut_off.get())
+            self.lpass.set_ydata(self.filteredLowPass)
+            self.figure.canvas.draw()
+            self.figure.canvas.flush_events()
+
+    def updateMedianFiltering(self, *args):
+        if self.median_kernel.get() % 1 >= 0.5:
+            if int(self.median_kernel.get()) % 2 != 0:
+                self.median_kernel.set(math.ceil(self.median_kernel.get()))
+            else:
+                self.median_kernel.set(math.ceil(self.median_kernel.get())-1)
+        else:
+            if int(self.median_kernel.get()) % 2 != 0:
+                self.median_kernel.set(math.floor(self.median_kernel.get()))
+            else:
+                self.median_kernel.set(math.floor(self.median_kernel.get())-1)
+
+        if self.x_coords and self.y_coords:
+            self.medianFilteredData = self.medianFiltering(self.y_coords, self.median_kernel.get())
+            self.medfilt.set_ydata(self.medianFilteredData)
+            self.figure.canvas.draw()
+            self.figure.canvas.flush_events()
+
+    def updateFastFourierTransform(self, *args):
+        self.low_pass_order.set(float(self.low_pass_order.get()))
+        if self.x_coords and self.y_coords:
+            self.fastFourierData = self.fastFourierTransform(self.y_coords, self.fft_thereshold.get())
+            self.fftline.set_ydata(self.fastFourierData)
+            self.figure.canvas.draw()
+            self.figure.canvas.flush_events()
+
     #TODO: Make this work for other graphs also
 
     # Toggles and Settings
@@ -365,12 +421,13 @@ class GUI:  # Class to write all code in
         self.xticks.set(int((max(self.x_coords) - min(self.x_coords)) / 20))
         self.yticks.set(int((max(self.y_coords) - min(self.y_coords)) / 20))
         self.moving_average_slider.config(to=max(self.x_coords))
+        self.median_slider.config(to=max(self.x_coords))
         self.moving_averages = self.movingaverage(self.y_coords, self.moving_average_interval.get())
-        self.lowPassFiltering(self.y_coords)
-        self.highPassFiltering(self.y_coords)
-        self.bandPassFiltering(self.y_coords)
-        self.medianFiltering(self.y_coords)
-        self.fastFourierData = self.fastFourierTransform(self.y_coords)
+        self.filteredLowPass = self.lowPassFiltering(self.y_coords, self.low_pass_order.get(), self.low_pass_cut_off.get())
+        self.filteredHighPass = self.highPassFiltering(self.y_coords)
+        self.filteredBandPass = self.bandPassFiltering(self.y_coords)
+        self.medianFilteredData = self.medianFiltering(self.y_coords, self.median_kernel.get())
+        self.fastFourierData = self.fastFourierTransform(self.y_coords, self.fft_thereshold.get())
         # print(self.fastFourierData)
         self.mvavg, = self.ax.plot(self.x_coords, self.moving_averages, label="Moving Average")
         self.lpass, = self.ax.plot(self.x_coords, self.filteredLowPass, label="Filtered Low Pass")
@@ -425,7 +482,7 @@ class GUI:  # Class to write all code in
         self.updateValue()
 
     # Filters
-    def movingaverage(self, interval, window_size):
+    def movingaverage(self, interval, window_size=4):
         # np.convolve
         window = np.ones(int(window_size)) / float(window_size)
         return np.convolve(interval, window, 'same')
@@ -435,30 +492,22 @@ class GUI:  # Class to write all code in
         # ret[window_size:] = ret[window_size:] - ret[:-window_size]
         # return ret[window_size - 1:] / window_size
 
-    def lowPassFiltering(self, data):
-        b, a = scipy.signal.butter(3, 0.05, 'lowpass')
-        self.filteredLowPass = scipy.signal.filtfilt(b, a, data)
+    def lowPassFiltering(self, data, order=3, cutoff=0.05):
+        b, a = scipy.signal.butter(order, cutoff, 'lowpass')
+        return scipy.signal.filtfilt(b, a, data)
 
     def highPassFiltering(self, data):
         b, a = scipy.signal.butter(3, 0.05, 'highpass')
-        self.filteredHighPass = scipy.signal.filtfilt(b, a, data)
+        return scipy.signal.filtfilt(b, a, data)
 
     def bandPassFiltering(self, data):
         b, a = scipy.signal.butter(3, [.01, .05], 'band')
-        self.filteredBandPass = scipy.signal.lfilter(b, a, data)
+        return scipy.signal.lfilter(b, a, data)
 
-    def medianFiltering(self, data):
-        self.medianFilteredData = scipy.signal.medfilt(data, kernel_size=7)
+    def medianFiltering(self, data, kernelsize=7):
+        return scipy.signal.medfilt(data, kernel_size=kernelsize)
 
-    def filter_rule(self, x, freq):
-        f_signal = 6
-        band = 0.05
-        if abs(freq) > f_signal + band or abs(freq) < f_signal - band:
-            return 0
-        else:
-            return x
-
-    def fastFourierTransform(self, signal, threshold=0.987e4):
+    def fastFourierTransform(self, signal, threshold=1e4):
         fourier = np.fft.rfft(signal)
         frequencies = np.fft.rfftfreq(len(signal), d=20e-3 / len(signal))
         fourier[frequencies > threshold] = 0
