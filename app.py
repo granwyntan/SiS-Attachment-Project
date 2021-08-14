@@ -37,6 +37,8 @@ class GUI:  # Class to write all code in
         self.window.title("Flourospectroscopy")  # Set title
         self.fullScreen = False  # Variable to track if fullscreen
         self.window.attributes("-fullscreen", self.fullScreen)  # Set fullscreen
+        self.window.state('zoomed')
+
         self.window.geometry(
             f"{self.window.winfo_screenwidth()}x{self.window.winfo_screenheight()}")  # make window fill entire screen
 
@@ -136,7 +138,7 @@ class GUI:  # Class to write all code in
         self.lpass_order_field.grid(row=2, column=0, sticky=NSEW)
         self.lpass_order_slider.grid(row=2, column=1, sticky=NSEW)
 
-        self.lpass_freq_slider = ttk.Scale(frame2tab2, from_=0.001, to=0.999, orient=HORIZONTAL, length=450,
+        self.lpass_freq_slider = ttk.Scale(frame2tab2, from_=0.0000000001, to=0.9999999999, orient=HORIZONTAL, length=450,
                                             variable=self.low_pass_cut_off, command=self.updateLowPassFiltering)
         self.lpass_freq_field = ttk.Entry(frame2tab2, textvariable=self.low_pass_cut_off)
         self.lpass_freq_field.bind("<Return>", lambda event: self.updateLowPassFiltering())
@@ -176,22 +178,22 @@ class GUI:  # Class to write all code in
 
         ttk.Button(frame2tab1, text="Save Moving Average Data",
                    command=lambda: self.saveFile("movingaverage", theycoords=self.moving_averages)).grid(
-            row=3, column=0, sticky=W)
+            row=3, column=0)
         ttk.Button(frame2tab2, text="Save Filtered Low Pass Data",
                    command=lambda: self.saveFile(filename="lowpass", theycoords=self.filteredLowPass)).grid(
-            row=5, column=0, sticky=W)
+            row=5, column=0)
         ttk.Button(frame2tab2, text="Save Filtered High Pass Data",
                    command=lambda: self.saveFile(filename="highpass", theycoords=self.filteredHighPass)).grid(
-            row=7, column=0, sticky=W)
+            row=7, column=0)
         ttk.Button(frame2tab2, text="Save Filtered Band Pass Data",
                    command=lambda: self.saveFile(filename="bandpass", theycoords=self.filteredBandPass)).grid(
-            row=9, column=0, sticky=W)
+            row=9, column=0)
         ttk.Button(frame2tab3, text="Save Median Filtered Data",
                    command=lambda: self.saveFile(filename="medianfiltered", theycoords=self.medianFilteredData)).grid(
-            row=3, column=0, sticky=W)
+            row=3, column=0)
         ttk.Button(frame2tab4, text="Save Fast Fourier Transform Data",
                    command=lambda: self.saveFile(filename="fastfouriertransform", theycoords=self.fastFourierData)).grid(
-            row=3, column=0, sticky=W)
+            row=3, column=0)
 
         frame2tab.pack(expand=1, fill=BOTH)
 
@@ -214,10 +216,12 @@ class GUI:  # Class to write all code in
         # frame3tab.pack(expand=1, fill=BOTH)
 
         # Settings
-        ttk.Button(frame1tab3, text="Clear Chart", command=self.clearData).grid(row=0, column=0, sticky=W)
+        ttk.Button(frame1tab3, text="Clear Chart", command=self.clearData).grid(row=0, column=0)
 
         self.xticks = IntVar(value=5)
         self.yticks = IntVar(value=5)
+        self.default_yticks = 5
+        self.default_xticks = 5
 
         # self.yslider = ttk.Scale(frame1tab3, from_=1, to=1000, orient=VERTICAL, command=self.updateValue, variable=self.yticks)
         # self.yslider.set(self.yticks.get())
@@ -226,7 +230,7 @@ class GUI:  # Class to write all code in
         # self.xslider = ttk.Scale(frame1tab3, from_=1, to=1000, orient=HORIZONTAL, command=self.updateValue, variable=self.xticks)
         # self.xslider.set(self.xticks)
         # self.xslider.pack()
-        ttk.Label(frame1tab3, text="X-axis: ").grid(row=1, column=0, sticky=NSEW)
+        ttk.Label(frame1tab3, text="X-axis Ticks: ").grid(row=1, column=0, sticky=NSEW)
         self.xspin = tk.Spinbox(frame1tab3, from_=3, to=100, textvariable=self.xticks, width=10,
                                 increment=5, command=self.updateValue)
         self.xslide = ttk.Scale(frame1tab3, from_=3, to=100, orient=HORIZONTAL, length=400, variable=self.xticks,
@@ -236,7 +240,7 @@ class GUI:  # Class to write all code in
         self.xslide.grid(row=1, column=2, sticky=NSEW)
         self.xspin.bind("<Return>", lambda event: self.updateValue())
 
-        ttk.Label(frame1tab3, text="Y-axis: ").grid(row=2, column=0, sticky=NSEW)
+        ttk.Label(frame1tab3, text="Y-axis Ticks: ").grid(row=2, column=0, sticky=NSEW)
         self.yspin = tk.Spinbox(frame1tab3, from_=3, to=100, textvariable=self.yticks, width=10,
                                 increment=5, command=self.updateValue)
         self.yslide = ttk.Scale(frame1tab3, from_=3, to=100, orient=HORIZONTAL, length=400, variable=self.yticks,
@@ -259,6 +263,10 @@ class GUI:  # Class to write all code in
                         variable=self.axesOn).grid(row=4, column=0, sticky=NSEW)
         #TODO: Hide Data Points (Scatter Plot) and Line
 
+        ttk.Button(frame1tab3, text="Rescale and Relimit", command=self.rescaleAndRelimit).grid(row=5, column=0, sticky=NSEW)
+        ttk.Button(frame1tab3, text="Reset x-axis Ticks", command=self.resetXTicks).grid(row=6, column=0, sticky=NSEW)
+        ttk.Button(frame1tab3, text="Reset y-axis Ticks", command=self.resetYTicks).grid(row=6, column=1, sticky=NSEW)
+
         self.updateValue()
 
         ttk.Button(frame1tab1, text="Select Flourescence Data", command=self.openFile).pack(side=TOP)
@@ -275,60 +283,6 @@ class GUI:  # Class to write all code in
 
         # Main Loop
         self.window.mainloop()
-
-    # Updating Graphs Functions
-    def updateMovingAverage(self, *args):
-        # self.moving_average_interval = self.moving_average_interval.get()
-        lower_limit = 1
-        upper_limit = max(self.x_coords) if self.x_coords and self.y_coords else 100
-        if self.moving_average_interval.get() < lower_limit:
-            self.moving_average_interval.set(int(lower_limit))
-        elif self.moving_average_interval.get() > upper_limit:
-            self.moving_average_interval.set(int(upper_limit))
-        else:
-            self.moving_average_interval.set(self.moving_average_interval.get())
-
-        if self.x_coords and self.y_coords:
-            self.moving_averages = self.movingaverage(self.y_coords, self.moving_average_interval.get())
-            self.mvavg.set_ydata(self.moving_averages)
-            self.figure.canvas.draw()
-            self.figure.canvas.flush_events()
-
-    def updateLowPassFiltering(self, *args):
-        self.low_pass_order.set(int(self.low_pass_order.get()))
-        if self.x_coords and self.y_coords:
-            self.filteredLowPass = self.lowPassFiltering(self.y_coords, self.low_pass_order.get(), self.low_pass_cut_off.get())
-            self.lpass.set_ydata(self.filteredLowPass)
-            self.figure.canvas.draw()
-            self.figure.canvas.flush_events()
-
-    def updateMedianFiltering(self, *args):
-        if self.median_kernel.get() % 1 >= 0.5:
-            if int(self.median_kernel.get()) % 2 != 0:
-                self.median_kernel.set(math.ceil(self.median_kernel.get()))
-            else:
-                self.median_kernel.set(math.ceil(self.median_kernel.get())-1)
-        else:
-            if int(self.median_kernel.get()) % 2 != 0:
-                self.median_kernel.set(math.floor(self.median_kernel.get()))
-            else:
-                self.median_kernel.set(math.floor(self.median_kernel.get())-1)
-
-        if self.x_coords and self.y_coords:
-            self.medianFilteredData = self.medianFiltering(self.y_coords, self.median_kernel.get())
-            self.medfilt.set_ydata(self.medianFilteredData)
-            self.figure.canvas.draw()
-            self.figure.canvas.flush_events()
-
-    def updateFastFourierTransform(self, *args):
-        self.low_pass_order.set(float(self.low_pass_order.get()))
-        if self.x_coords and self.y_coords:
-            self.fastFourierData = self.fastFourierTransform(self.y_coords, self.fft_thereshold.get())
-            self.fftline.set_ydata(self.fastFourierData)
-            self.figure.canvas.draw()
-            self.figure.canvas.flush_events()
-
-    #TODO: Make this work for other graphs also
 
     # Toggles and Settings
     def toggleAxes(self):
@@ -349,11 +303,12 @@ class GUI:  # Class to write all code in
         self.figure.canvas.draw()
         self.figure.canvas.flush_events()
 
-    def hideDataPoints(self):
-        pass
+    def hideDataPoints(self, value):
+        self.data_points.set_visible(value)
+        self.filterCheck()
 
     def hideFlourescenceData(self, value):
-        self.ax.lines[1].set_visible(value)
+        self.flourescence_data.set_visible(value)
         self.filterCheck()
 
     def toggleMovingAverage(self):
@@ -405,6 +360,78 @@ class GUI:  # Class to write all code in
         self.figure.canvas.draw()
         self.figure.canvas.flush_events()
 
+    # Resetting Functions
+    def resetXTicks(self):
+        self.xticks.set(self.default_xticks)
+        self.updateValue()
+
+    def resetYTicks(self):
+        self.yticks.set(self.default_yticks)
+        self.updateValue()
+
+    # Updating Graphs Functions
+    def updateMovingAverage(self, *args):
+        # self.moving_average_interval = self.moving_average_interval.get()
+        lower_limit = 1
+        upper_limit = max(self.x_coords) if self.x_coords and self.y_coords else 100
+        if self.moving_average_interval.get() < lower_limit:
+            self.moving_average_interval.set(int(lower_limit))
+        elif self.moving_average_interval.get() > upper_limit:
+            self.moving_average_interval.set(int(upper_limit))
+        else:
+            self.moving_average_interval.set(self.moving_average_interval.get())
+
+        if self.x_coords and self.y_coords:
+            self.moving_averages = self.movingaverage(self.y_coords, self.moving_average_interval.get())
+            self.mvavg.set_ydata(self.moving_averages)
+            self.figure.canvas.draw()
+            self.figure.canvas.flush_events()
+
+    def updateLowPassFiltering(self, *args):
+        order_minimum = 0
+        freq_lower_limit = 0
+        freq_upper_limit = 1
+        if self.low_pass_cut_off.get() <= freq_lower_limit:
+            self.low_pass_cut_off.set(0.0000000001)
+        elif self.low_pass_cut_off.get() >= freq_upper_limit:
+            self.low_pass_cut_off.set(0.9999999999)
+        if self.low_pass_order.get() < order_minimum:
+            self.low_pass_order.set(1)
+        self.low_pass_order.set(int(self.low_pass_order.get()))
+        if self.x_coords and self.y_coords:
+            self.filteredLowPass = self.lowPassFiltering(self.y_coords, self.low_pass_order.get(), self.low_pass_cut_off.get())
+            self.lpass.set_ydata(self.filteredLowPass)
+            self.figure.canvas.draw()
+            self.figure.canvas.flush_events()
+
+    def updateMedianFiltering(self, *args):
+        if self.median_kernel.get() % 1 >= 0.5:
+            if int(self.median_kernel.get()) % 2 != 0:
+                self.median_kernel.set(math.ceil(self.median_kernel.get()))
+            else:
+                self.median_kernel.set(math.ceil(self.median_kernel.get())-1)
+        else:
+            if int(self.median_kernel.get()) % 2 != 0:
+                self.median_kernel.set(math.floor(self.median_kernel.get()))
+            else:
+                self.median_kernel.set(math.floor(self.median_kernel.get())-1)
+
+        if self.x_coords and self.y_coords:
+            self.medianFilteredData = self.medianFiltering(self.y_coords, self.median_kernel.get())
+            self.medfilt.set_ydata(self.medianFilteredData)
+            self.figure.canvas.draw()
+            self.figure.canvas.flush_events()
+
+    def updateFastFourierTransform(self, *args):
+        self.low_pass_order.set(float(self.low_pass_order.get()))
+        if self.x_coords and self.y_coords:
+            self.fastFourierData = self.fastFourierTransform(self.y_coords, self.fft_thereshold.get())
+            self.fftline.set_ydata(self.fastFourierData)
+            self.figure.canvas.draw()
+            self.figure.canvas.flush_events()
+
+    #TODO: Smoothing Splines
+
     # Full Screen Toggles
     def toggleFullScreen(self, event):
         self.fullScreen = not self.fullScreen
@@ -416,10 +443,12 @@ class GUI:  # Class to write all code in
 
     # Main Graph Plotting Function
     def plotGraph(self):
-        self.ax.scatter(self.x_coords, self.y_coords, label="Data Points", color="lightcoral")
-        self.ax.plot(self.x_coords, self.y_coords, label='Flourescence Data', color="royalblue")
-        self.xticks.set(int((max(self.x_coords) - min(self.x_coords)) / 20))
-        self.yticks.set(int((max(self.y_coords) - min(self.y_coords)) / 20))
+        self.data_points = self.ax.scatter(self.x_coords, self.y_coords, label="Data Points", color="lightcoral")
+        self.flourescence_data = self.ax.plot(self.x_coords, self.y_coords, label='Flourescence Data', color="royalblue")
+        self.default_xticks = int((max(self.x_coords) - min(self.x_coords)) / 20)
+        self.xticks.set(self.default_xticks)
+        self.default_yticks = int((max(self.y_coords) - min(self.y_coords)) / 20)
+        self.yticks.set(self.default_yticks)
         self.moving_average_slider.config(to=max(self.x_coords))
         self.median_slider.config(to=max(self.x_coords))
         self.moving_averages = self.movingaverage(self.y_coords, self.moving_average_interval.get())
@@ -455,6 +484,8 @@ class GUI:  # Class to write all code in
         # # self.ax.set_ylim(min(self.y_coords)-self.yticks.get(), max(self.y_coords)+self.yticks.get())
 
     def clearData(self):
+        self.default_yticks = 5
+        self.default_xticks = 5
         self.x_coords = []
         self.y_coords = []
         self.moving_averages = []
@@ -566,7 +597,7 @@ class GUI:  # Class to write all code in
                         self.clearData()
                         self.x_coords = []
                         self.y_coords = []
-                    print(filename)
+                    # print(filename)
                     lines = [line.strip() for line in f]
                     for i in range(len(lines)):
                         lines[i] = [float(lines[i].split()[0]), float(lines[i].split()[1])]
