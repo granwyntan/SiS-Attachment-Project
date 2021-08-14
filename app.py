@@ -255,7 +255,14 @@ class GUI:  # Class to write all code in
     # Updating Graphs Functions
     def updateMovingAverage(self, *args):
         # self.moving_average_interval = self.moving_average_interval.get()
-        self.moving_average_interval.set(int(self.moving_average_interval.get()))
+        limit = max(self.x_coords) if self.x_coords and self.y_coords else 100
+        if self.moving_average_interval.get() < 1:
+            self.moving_average_interval.set(1)
+        elif self.moving_average_interval.get() > limit:
+            self.moving_average_interval.set(int(limit))
+        else:
+            self.moving_average_interval.set(self.moving_average_interval.get())
+
         if self.x_coords and self.y_coords:
             self.moving_averages = self.movingaverage(self.y_coords, self.moving_average_interval.get())
             self.mvavg.set_ydata(self.moving_averages)
