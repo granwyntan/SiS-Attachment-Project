@@ -11,6 +11,7 @@ from matplotlib.backends.backend_tkagg import (FigureCanvasTkAgg, NavigationTool
 # Implement the default Matplotlib key bindings.
 from matplotlib.backend_bases import key_press_handler
 from matplotlib.figure import Figure
+from scipy.interpolate import UnivariateSpline
 import scipy.signal
 import os
 import time
@@ -222,6 +223,7 @@ class GUI:  # Class to write all code in
         self.yticks = IntVar(value=5)
         self.default_yticks = 5
         self.default_xticks = 5
+        plt.minorticks_on()
 
         # self.yslider = ttk.Scale(frame1tab3, from_=1, to=1000, orient=VERTICAL, command=self.updateValue, variable=self.yticks)
         # self.yslider.set(self.yticks.get())
@@ -457,6 +459,7 @@ class GUI:  # Class to write all code in
         self.filteredBandPass = self.bandPassFiltering(self.y_coords)
         self.medianFilteredData = self.medianFiltering(self.y_coords, self.median_kernel.get())
         self.fastFourierData = self.fastFourierTransform(self.y_coords, self.fft_thereshold.get())
+        self.smoothingSplineData = self.smoothingSpline(self.y_coords)
         # print(self.fastFourierData)
         self.mvavg, = self.ax.plot(self.x_coords, self.moving_averages, label="Moving Average")
         self.lpass, = self.ax.plot(self.x_coords, self.filteredLowPass, label="Filtered Low Pass")
@@ -464,7 +467,8 @@ class GUI:  # Class to write all code in
         self.bpass, = self.ax.plot(self.x_coords, self.filteredBandPass, label="Filtered Band Pass")
         self.medfilt, = self.ax.plot(self.x_coords, self.medianFilteredData, label="Median Filtered")
         self.fftline, = self.ax.plot(self.x_coords, self.fastFourierData, label="Fast Fourier Transform")
-        # TODO: Smoothing Splines
+        self.ssl, = self.ax.plot(self.x_coords, self.smoothingSplineData, label="Smoothing Spline")
+
         self.fftline.set_visible(self.fft_on.get())
         self.medfilt.set_visible(self.median_on.get())
         self.bpass.set_visible(self.band_pass_on.get())
@@ -543,6 +547,14 @@ class GUI:  # Class to write all code in
         frequencies = np.fft.rfftfreq(len(signal), d=20e-3 / len(signal))
         fourier[frequencies > threshold] = 0
         return np.fft.irfft(fourier)
+
+    def smoothingSpline(self, data, smoothingFactor=1):
+        x = self.x_coords
+        y = self.y_coords
+        spl = UnivariateSpline(x, y, s=smoothingFactor)
+        # xs = data
+        # spl.set_smoothing_factor(smoothingFactor)
+        return spl(x)
 
     # Saving File Functionality
     def saveFile(self, filename, theycoords):
