@@ -79,12 +79,12 @@ class GUI:  # Class to write all code in
         frame2tab2 = ttk.Frame(frame2tab)
         frame2tab3 = ttk.Frame(frame2tab)
         frame2tab4 = ttk.Frame(frame2tab)
-        frame2tab5 = ttk.Frame(frame2tab)
+        # frame2tab5 = ttk.Frame(frame2tab)
         frame2tab.add(frame2tab1, text='Moving Average')
         frame2tab.add(frame2tab2, text='Butterworth Filter')
         frame2tab.add(frame2tab3, text='Median Filtering')
         frame2tab.add(frame2tab4, text='Fast Fourier Transform')
-        frame2tab.add(frame2tab5, text='Smoothing Splines')
+        # frame2tab.add(frame2tab5, text='Smoothing Splines')
         # frame2tab.add(frame2tab2, text='Spectral Decomposition')
         # frame2tab.add(frame2tab3, text='Ratiometric Analysis')
 
@@ -459,7 +459,7 @@ class GUI:  # Class to write all code in
         self.filteredBandPass = self.bandPassFiltering(self.y_coords)
         self.medianFilteredData = self.medianFiltering(self.y_coords, self.median_kernel.get())
         self.fastFourierData = self.fastFourierTransform(self.y_coords, self.fft_thereshold.get())
-        self.smoothingSplineData = self.smoothingSpline(self.y_coords)
+        # self.smoothingSplineData = self.smoothingSpline(self.y_coords)
         # print(self.fastFourierData)
         self.mvavg, = self.ax.plot(self.x_coords, self.moving_averages, label="Moving Average")
         self.lpass, = self.ax.plot(self.x_coords, self.filteredLowPass, label="Filtered Low Pass")
@@ -467,7 +467,7 @@ class GUI:  # Class to write all code in
         self.bpass, = self.ax.plot(self.x_coords, self.filteredBandPass, label="Filtered Band Pass")
         self.medfilt, = self.ax.plot(self.x_coords, self.medianFilteredData, label="Median Filtered")
         self.fftline, = self.ax.plot(self.x_coords, self.fastFourierData, label="Fast Fourier Transform")
-        self.ssl, = self.ax.plot(self.x_coords, self.smoothingSplineData, label="Smoothing Spline")
+        # self.ssl, = self.ax.plot(self.x_coords, self.smoothingSplineData, label="Smoothing Spline")
 
         self.fftline.set_visible(self.fft_on.get())
         self.medfilt.set_visible(self.median_on.get())
@@ -548,13 +548,13 @@ class GUI:  # Class to write all code in
         fourier[frequencies > threshold] = 0
         return np.fft.irfft(fourier)
 
-    def smoothingSpline(self, data, smoothingFactor=1):
-        x = self.x_coords
-        y = self.y_coords
-        spl = UnivariateSpline(x, y, s=smoothingFactor)
-        # xs = data
-        # spl.set_smoothing_factor(smoothingFactor)
-        return spl(x)
+    # def smoothingSpline(self, data, smoothingFactor=1):
+    #     x = self.x_coords
+    #     y = self.y_coords
+    #     spl = UnivariateSpline(x, y, s=smoothingFactor)
+    #     # xs = data
+    #     # spl.set_smoothing_factor(smoothingFactor)
+    #     return spl(x)
 
     # Saving File Functionality
     def saveFile(self, filename, theycoords):
