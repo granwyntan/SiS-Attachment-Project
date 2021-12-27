@@ -272,7 +272,7 @@ class GUI:  # Class to write all code in
         self.updateValue()
 
         ttk.Button(frame1tab1, text="Select Flourescence Data", command=self.openFile).pack(side=TOP)
-        ttk.Button(frame1tab1, text="Select Background Data", command=self.openBackgroundFile).pack(side=TOP)
+        # ttk.Button(frame1tab1, text="Select Background Data", command=self.openBackgroundFile).pack(side=TOP)
 
         # Key Bindings
         self.window.bind("f", self.toggleFullScreen)
@@ -589,8 +589,8 @@ class GUI:  # Class to write all code in
             tk.messagebox.showinfo("Save to File", "No Data Loaded")
 
     # Opening File Functionality
-    def openBackgroundFile(self):
-        # TODO: Background File Functionality and processing
+    # def openBackgroundFile(self):
+    #     # TODO: Background File Functionality and processing
         pass
     def openFile(self):
         filename = filedialog.askopenfilename(initialdir="",
