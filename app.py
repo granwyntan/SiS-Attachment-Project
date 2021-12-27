@@ -432,8 +432,6 @@ class GUI:  # Class to write all code in
             self.figure.canvas.draw()
             self.figure.canvas.flush_events()
 
-    #TODO: Smoothing Splines
-
     # Full Screen Toggles
     def toggleFullScreen(self, event):
         self.fullScreen = not self.fullScreen
